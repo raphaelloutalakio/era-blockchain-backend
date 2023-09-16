@@ -10,7 +10,15 @@ const config: HardhatUserConfig = {
   networks: {
     ...getHardhatConfigNetworks(),
   },
-  solidity: "0.8.7",
+  solidity: {
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
+    version: "0.8.7",
+  },
 };
 
 export default config;

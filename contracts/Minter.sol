@@ -52,17 +52,22 @@ contract Minter is zContract, ERC721URIStorage {
         uint256 amount,
         bytes calldata message
     ) external virtual override {
-        if (msg.sender != address(systemContract)) {
-            revert SenderNotSystemContract();
-        }
-        (address to, string memory metadataURI) = abi.decode(
-            message,
-            (address, string)
+        require(
+            msg.sender == address(systemContract),
+            "Sender not system contract"
         );
 
-        address acceptedZRC20 = systemContract.gasCoinZRC20ByChainId(chain);
-        if (zrc20 != acceptedZRC20) revert WrongChain();
+        require(message.length > 0, "Empty message");
 
-        mintNFT(to, metadataURI);
+        (bytes4 selector, uint256 param) = abi.decode(
+            message,
+            (bytes4, uint256)
+        );
+
+        if (selector == bytes4(keccak256("yourFunction(uint256)"))) {
+            eraContract.yourFunction(param);
+        } else {
+            revert("Unknown function selector");
+        }
     }
 }

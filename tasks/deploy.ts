@@ -2,6 +2,8 @@ import { getAddress } from "@zetachain/protocol-contracts";
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
+// ERA :  0xFCE15f9e3d3f482f292298176E198218B54eC790
+
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   if (hre.network.name !== "zeta_testnet") {
     throw new Error(
@@ -32,14 +34,15 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     "VD",
     "Just for fun",
     80001,
-    systemContract
+    systemContract,
+    "0x86BA897D3C2F3069DC97F06Ac978e8d8D5F22c00"
   );
   await contract.deployed();
 
   console.log(`🚀 Successfully deployed contract on ZetaChain.
-📜 Contract address: ${contract.address}
-🌍 Explorer: https://athens3.explorer.zetachain.com/address/${contract.address}
-`);
+  📜 Contract address: ${contract.address}
+  🌍 Explorer: https://athens3.explorer.zetachain.com/address/${contract.address}
+  `);
 };
 
 task("deploy", "Deploy the contract", main);

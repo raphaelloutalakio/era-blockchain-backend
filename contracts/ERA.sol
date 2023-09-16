@@ -10,6 +10,12 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract ERA is AccessControl, ReentrancyGuard {
+    uint256 public storedData;
+
+    function yourFunction(uint256 newValue) public {
+        storedData = newValue;
+    }
+
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR");
 
     /// Structs
@@ -180,8 +186,8 @@ contract ERA is AccessControl, ReentrancyGuard {
 
     // Mappings
     mapping(address => RoyaltyCollection) public royaltyCollections;
-    mapping(uint256 => List) lists;
-    mapping(uint256 => Offer) offers;
+    mapping(uint256 => List) public lists;
+    mapping(uint256 => Offer) public offers;
     mapping(uint256 => AuctionListing) public auctions;
     mapping(uint256 => NFTCollectionApplication) public collectionApplications;
     mapping(uint256 => Bundle) public bundles;

@@ -17,10 +17,16 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const [signer] = await hre.ethers.getSigners();
   console.log(`🔑 Using account: ${signer.address}\n`);
 
+  const message = ethers.utils.hexDataSlice(
+    ethers.utils.keccak256(ethers.utils.toUtf8Bytes("yourFunction(uint256)")),
+    0,
+    4
+  );
+
   const data = prepareData(
     args.contract,
-    ["address", "string"],
-    [args.recipient, args.message]
+    ["bytes4", "uint256"],
+    [message, "100"]
   );
 
   console.log("data to pass : ", data);
@@ -40,6 +46,4 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 task("interact", "Interact with the contract")
   .addParam("contract", "The address of the withdraw contract on ZetaChain")
   .addParam("amount", "Amount of tokens to send")
-  .addParam("recipient", "Recipient address")
-  .addParam("message", "Message to send along with the transaction")
   .setAction(main);
