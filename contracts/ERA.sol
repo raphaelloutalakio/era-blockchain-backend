@@ -203,13 +203,13 @@ contract ERA is AccessControl, ReentrancyGuard {
         marketplace.owner = msg.sender;
     }
 
-    function mutate_owner(address new_owner) public {
-        require(msg.sender == marketplace.owner, "ENotOwner");
+    function mutate_owner(address new_owner) public onlyRole(OPERATOR_ROLE) {
         marketplace.owner = new_owner;
     }
 
-    function mutate_fee_pbs(uint256 new_fee_pbs) public {
-        require(msg.sender == marketplace.owner, "ENotOwner");
+    function mutate_fee_pbs(
+        uint256 new_fee_pbs
+    ) public onlyRole(OPERATOR_ROLE) {
         if (new_fee_pbs < marketplace.collateral_fee)
             marketplace.fee_pbs = new_fee_pbs;
     }
@@ -308,25 +308,31 @@ contract ERA is AccessControl, ReentrancyGuard {
         marketplace.listed = marketplace.listed + 1;
     }
 
-    function changePrice(uint256 list_id, address _coin, uint256 ask) external {
-        require(lists[list_id].lister == msg.sender, "Not lister");
-        lists[list_id].COIN = _coin;
-        lists[list_id].ask = ask;
-        emit ChangePrice(list_id, lists[list_id].COIN, lists[list_id].ask);
+    function changePrice(
+        address _lister,
+        uint256 _list_id,
+        address _coin,
+        uint256 _ask
+    ) external {
+        require(lists[_list_id].lister == _lister, "Not lister");
+        lists[_list_id].COIN = _coin;
+        lists[_list_id].ask = _ask;
+        emit ChangePrice(_list_id, _coin, _ask);
     }
 
-    function delist(uint256 list_id) external {
-        require(lists[list_id].lister == msg.sender, "Not lister");
+    function delist(address _lister, uint256 list_id) external {
+        require(lists[list_id].lister == _lister, "Not lister");
+
         lists[list_id].owner = address(0);
         lists[list_id].lister = address(0);
 
         IERC721 asset = IERC721(lists[list_id].NFT);
-        asset.transferFrom(address(this), msg.sender, lists[list_id].tokenId);
+        asset.transferFrom(address(this), _lister, lists[list_id].tokenId);
 
         emit DeList(list_id);
     }
 
-    function buy(uint256 list_id) external nonReentrant {
+    function buy(address _buyer, uint256 list_id) external nonReentrant {
         uint256 fee_amount;
         uint256 royalty_fee_amount;
         if (marketplace.fee_pbs > 0) {
@@ -346,26 +352,26 @@ contract ERA is AccessControl, ReentrancyGuard {
 
         if (fee_amount != 0)
             IERC20(lists[list_id].COIN).transferFrom(
-                msg.sender,
+                _buyer,
                 marketplace.owner,
                 fee_amount
             );
 
         if (royalty_fee_amount != 0)
             IERC20(lists[list_id].COIN).transferFrom(
-                msg.sender,
+                _buyer,
                 royaltyCollections[lists[list_id].NFT].royaltyCollector,
                 fee_amount
             );
 
         IERC20(lists[list_id].COIN).transferFrom(
-            msg.sender,
+            _buyer,
             lists[list_id].owner,
             lists[list_id].ask - fee_amount - royalty_fee_amount
         );
 
         IERC721 asset = IERC721(lists[list_id].NFT);
-        asset.transferFrom(address(this), msg.sender, lists[list_id].tokenId);
+        asset.transferFrom(address(this), _buyer, lists[list_id].tokenId);
 
         emit Buy(
             lists[list_id].NFT,
@@ -373,11 +379,13 @@ contract ERA is AccessControl, ReentrancyGuard {
             lists[list_id].COIN,
             lists[list_id].ask,
             lists[list_id].owner,
-            msg.sender
+            _buyer
         );
 
         // Delist the list because the list of accepted.
         lists[list_id].owner = address(0);
+        lists[list_id].lister = address(0);
+
         emit DeList(list_id);
     }
 

@@ -5,7 +5,10 @@ const main = async () => {
   try {
     // Read the contracts.json file
     const contractsFile = await fs.readFile("../contracts.json", "utf-8");
+
     const contracts = JSON.parse(contractsFile);
+
+    console.log("contracfile : ", contracts);
 
     // Obtain the contract addresses
     const omniContractAddress = contracts.Omni;
@@ -33,21 +36,21 @@ const main = async () => {
 
     console.log(`🔑 Using account: ${signer.address}\n`);
 
-    // for (let i = 0; i < 10; i++) {
-    //   // mint nft and approve era_contract
-    //   const tx = await nftContract.mintNFT("XYX");
-    //   await tx.wait();
+    for (let i = 0; i < 10; i++) {
+      // mint nft and approve era_contract
+      const tx = await nftContract.mintNFT("XYX");
+      await tx.wait();
 
-    //   const nftId = await nftContract.getCurrentTokenId();
-    //   const approve_tx = await nftContract.approve(
-    //     eraContractAddress,
-    //     nftId.toString()
-    //   );
+      const nftId = await nftContract.getCurrentTokenId();
+      const approve_tx = await nftContract.approve(
+        eraContractAddress,
+        nftId.toString()
+      );
 
-    //   await approve_tx.wait();
-    // }
+      await approve_tx.wait();
+    }
 
-    const;
+    // const;
   } catch (error) {
     console.error("Error reading or interacting with contracts:", error);
   }
