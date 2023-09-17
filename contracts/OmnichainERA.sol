@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./ERA.sol";
 
-contract Minter is zContract, ERC721URIStorage {
+contract OmnichainERA is zContract, ERC721URIStorage {
     error SenderNotSystemContract();
     error WrongChain();
 

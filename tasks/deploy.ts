@@ -22,20 +22,14 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const systemContract = getAddress("systemContract", "zeta_testnet");
 
   const factory = await hre.ethers.getContractFactory("Minter");
-  // const contract = await factory.deploy(
-  //   "Homi",
-  //   "HM",
-  //   "For testing",
-  //   18332,
-  //   systemContract
-  // );
+
   const contract = await factory.deploy(
     "Vishal",
     "VD",
     "Just for fun",
     80001,
     systemContract,
-    "0x86BA897D3C2F3069DC97F06Ac978e8d8D5F22c00"
+    "0x167e2eaF080Ed76afd28Ae7071764cCa2B9B7716"
   );
   await contract.deployed();
 

@@ -26,7 +26,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const data = prepareData(
     args.contract,
     ["bytes4", "uint256"],
-    [message, "100"]
+    [message, "8989"]
   );
 
   console.log("data to pass : ", data);

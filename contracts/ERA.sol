@@ -266,6 +266,7 @@ contract ERA is AccessControl, ReentrancyGuard {
     }
 
     function list(
+        address _lister,
         address _nftAddress,
         uint256 _tokenId,
         address _coin,
@@ -274,7 +275,7 @@ contract ERA is AccessControl, ReentrancyGuard {
         require(_ask > 0, "EInvalidList");
 
         IERC721 asset = IERC721(_nftAddress);
-        asset.transferFrom(msg.sender, address(this), _tokenId);
+        asset.transferFrom(_lister, address(this), _tokenId);
 
         require(
             asset.ownerOf(_tokenId) == address(this),
@@ -288,7 +289,7 @@ contract ERA is AccessControl, ReentrancyGuard {
             COIN: _coin,
             ask: _ask,
             owner: address(this),
-            lister: msg.sender,
+            lister: _lister,
             offers: 0
         });
 
@@ -300,7 +301,7 @@ contract ERA is AccessControl, ReentrancyGuard {
             _tokenId,
             _coin,
             _ask,
-            msg.sender,
+            _lister,
             0
         );
 
