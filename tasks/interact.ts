@@ -3,15 +3,9 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { parseEther } from "@ethersproject/units";
 import { getAddress } from "@zetachain/protocol-contracts";
 import { prepareData, trackCCTX } from "@zetachain/toolkit/helpers";
+import contracts from "../scripts/contracts.json";
 
 const ethers = require("ethers");
-
-// polygon mumbai : 0xCbeBB06cfF9070e61467440aD575c68A2e0b27B0
-// bitcoin  : 0xc248C4DD38678BE5184D86Fc548582BDEeEBFA96
-
-// to check
-// npx hardhat cctx --tx ef85eb6f704da0f2a4798870fb1105f7b6826f0d404a8bdaeb52d46eb81ba6e2
-// npx hardhat cctx --tx 2a421322f03b08e55ba78b4de213ebc8b552eef8411381e81d11074a6e413404
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const [signer] = await hre.ethers.getSigners();
@@ -19,7 +13,17 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   let message, data;
   const select = args.select;
-  const omniContractAddr = "0x2B7a6d8520c899B4D3846f77D278fBC35D157f75";
+
+  const omniContractAddress = contracts.Omni;
+  const nftContractAddress = contracts.MintNFt;
+  const eraContractAddress = contracts.ERA;
+
+  console.log(contracts);
+  const paymentToken = "0x8a239DBDBc385218439623028cEf69506577b1d2";
+  const amountToListBuy = "22000000000000000000";
+  const nftToBuy = "1";
+  const toDList = "0";
+  const nftToList = "2";
 
   if (select === "1") {
     // yourfunction
@@ -29,9 +33,9 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
       4
     );
     data = prepareData(
-      omniContractAddr,
+      omniContractAddress,
       ["bytes4", "uint256"],
-      [message, "9999"]
+      [message, "99"]
     );
   } else if (select === "2") {
     // list
@@ -43,15 +47,9 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
       4
     );
     data = prepareData(
-      omniContractAddr,
+      omniContractAddress,
       ["bytes4", "address", "uint256", "address", "int256"],
-      [
-        message,
-        "0xAeA020FCc5B6D838E7d663F66143B6F2eb72dbCC",
-        "3",
-        "0x2DDA7BA58e54733381a5139f2775d1e7de49A4e0",
-        "22000000",
-      ]
+      [message, nftContractAddress, nftToList, paymentToken, amountToListBuy]
     );
   } else if (select === "3") {
     // list
@@ -62,17 +60,24 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
       0,
       4
     );
-    data = prepareData(omniContractAddr, ["bytes4", "uint256"], [message, "1"]);
+    data = prepareData(
+      omniContractAddress,
+      ["bytes4", "uint256"],
+      [message, toDList]
+    );
+  } else if (select === "4") {
+    // list
+    message = ethers.utils.hexDataSlice(
+      ethers.utils.keccak256(ethers.utils.toUtf8Bytes("buy(address,uint256)")),
+      0,
+      4
+    );
+    data = prepareData(
+      omniContractAddress,
+      ["bytes4", "uint256"],
+      [message, nftToBuy]
+    );
   }
-  // else if (select === "4") {
-  //   // list
-  //   message = ethers.utils.hexDataSlice(
-  //     ethers.utils.keccak256(ethers.utils.toUtf8Bytes("buy(address,uint256)")),
-  //     0,
-  //     4
-  //   );
-  //   data = prepareData(omniContractAddr, ["bytes4", "uint256"], [message, "2"]);
-  // }
 
   console.log("data to pass : ", data);
 

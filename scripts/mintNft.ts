@@ -1,16 +1,9 @@
 import fs from "fs/promises"; // Import the 'promises' version of 'fs' for async file operations
 import { ethers } from "hardhat"; // Import ethers for contract interaction
+import contracts from "./contracts.json";
 
 const main = async () => {
   try {
-    // Read the contracts.json file
-    const contractsFile = await fs.readFile("../contracts.json", "utf-8");
-
-    const contracts = JSON.parse(contractsFile);
-
-    console.log("contracfile : ", contracts);
-
-    // Obtain the contract addresses
     const omniContractAddress = contracts.Omni;
     const nftContractAddress = contracts.MintNFt;
     const eraContractAddress = contracts.ERA;
@@ -48,9 +41,9 @@ const main = async () => {
       );
 
       await approve_tx.wait();
-    }
 
-    // const;
+      console.log("Approved : ", nftId.toString());
+    }
   } catch (error) {
     console.error("Error reading or interacting with contracts:", error);
   }

@@ -9,11 +9,11 @@ const main = async () => {
   const [signer] = await hre.ethers.getSigners();
   console.log(`🔑 Using account: ${signer.address}\n`);
   // deploy mintNFT
-  // const MinftNFtfactory = await hre.ethers.getContractFactory("MinftNFt");
-  // const mintNFTContract = await MinftNFtfactory.deploy();
-  // await mintNFTContract.deployed();
+  const MinftNFtfactory = await hre.ethers.getContractFactory("MinftNFt");
+  const mintNFTContract = await MinftNFtfactory.deploy();
+  await mintNFTContract.deployed();
 
-  // console.log("MintNFTContract deployed at : ", mintNFTContract.address);
+  console.log("MintNFTContract deployed at : ", mintNFTContract.address);
 
   // deploy ERA
   const ERAfactory = await hre.ethers.getContractFactory("ERA");
@@ -41,14 +41,8 @@ const main = async () => {
 
   console.log("OmniChainERAContract deployed at : ", omni_contract.address);
 
-  // const contracts = {
-  //   MintNFt: mintNFTContract.address,
-  //   ERA: era_contract.address,
-  //   Omni: omni_contract.address,
-  // };
-
   const contracts = {
-    MintNFt: "0xAeA020FCc5B6D838E7d663F66143B6F2eb72dbCC",
+    MintNFt: mintNFTContract.address,
     ERA: era_contract.address,
     Omni: omni_contract.address,
   };

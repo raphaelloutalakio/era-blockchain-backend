@@ -82,10 +82,12 @@ contract OmnichainERA is zContract, ERC721URIStorage {
                 );
 
             address _lister = BytesHelperLib.bytesToAddress(context.origin, 0);
+
             eraContract.list(_lister, _nftAddress, _tokenId, _coin, _ask);
         } else if (selector == bytes4(keccak256("delist(address,uint256)"))) {
             address _lister = BytesHelperLib.bytesToAddress(context.origin, 0);
             (, uint256 list_id) = abi.decode(message, (bytes4, uint256));
+
             eraContract.delist(_lister, list_id);
         } else if (
             selector ==
@@ -96,10 +98,12 @@ contract OmnichainERA is zContract, ERC721URIStorage {
                 message,
                 (bytes4, uint256, address, uint256)
             );
+
             eraContract.changePrice(_lister, _list_id, _coin, _ask);
         } else if (selector == bytes4(keccak256("buy(address,uint256)"))) {
             address _buyer = BytesHelperLib.bytesToAddress(context.origin, 0);
             (, uint256 _list_id) = abi.decode(message, (bytes4, uint256));
+
             eraContract.buy(_buyer, _list_id);
         } else {
             revert("Unknown function selector");
