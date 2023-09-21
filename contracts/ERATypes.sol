@@ -14,12 +14,12 @@ struct Marketplace {
 
 struct List {
     uint256 list_id;
+    address lister;
     address nftAddress;
     uint256 tokenId;
     address paymentToken;
     uint256 ask;
     address owner;
-    address lister;
     uint256 offers;
 }
 

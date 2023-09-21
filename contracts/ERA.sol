@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./ERATypes.sol";
+import "hardhat/console.sol";
 
 contract ERA is AccessControl, ReentrancyGuard {
     uint256 public storedData;
@@ -20,14 +21,14 @@ contract ERA is AccessControl, ReentrancyGuard {
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR");
 
     /// Events
-    event Listing(
+    event Listed(
         uint256 list_id,
+        address lister,
         address nftAddress,
-        uint256 Token_ID,
-        address token,
-        uint256 amount,
-        address seller,
-        uint256 expires
+        uint256 tokenId,
+        address paymentToken,
+        uint256 ask,
+        address owner
     );
 
     event ItemDelisted(
@@ -54,9 +55,9 @@ contract ERA is AccessControl, ReentrancyGuard {
 
     event ItemPurchased(
         address indexed buyer,
-        address indexed seller,
+        address indexed lister,
         uint256 indexed listId,
-        address nftContract,
+        address nftAddress,
         uint256 tokenId,
         address paymentToken,
         uint256 totalPrice
@@ -198,7 +199,7 @@ contract ERA is AccessControl, ReentrancyGuard {
         royaltyCollections[_nftAddress].royaltyCollector = royaltyCollector;
     }
 
-    function calculate_royalty_collection_fee(
+    function calculateRoyaltyCollectionFee(
         address _nftAddress,
         uint256 amount
     ) public view returns (uint256) {
@@ -226,12 +227,12 @@ contract ERA is AccessControl, ReentrancyGuard {
 
         List memory newList = List({
             list_id: marketplace.listed,
+            lister: _lister,
             nftAddress: _nftAddress,
             tokenId: _tokenId,
             paymentToken: _paymentToken,
             ask: _ask,
             owner: address(this),
-            lister: _lister,
             offers: 0
         });
 
@@ -239,14 +240,14 @@ contract ERA is AccessControl, ReentrancyGuard {
         listedItemIds.push(marketplace.listed);
         marketplace.listed = marketplace.listed + 1;
 
-        emit Listing(
+        emit Listed(
             marketplace.listed - 1,
+            _lister,
             _nftAddress,
             _tokenId,
             _paymentToken,
             _ask,
-            _lister,
-            0
+            address(this)
         );
     }
 
@@ -307,8 +308,10 @@ contract ERA is AccessControl, ReentrancyGuard {
             totalAmount += fee_amount;
         }
 
+        console.log("asked value : ", lists[list_id].ask);
+
         if (check_exists_royalty_collection(lists[list_id].nftAddress)) {
-            royalty_fee_amount = calculate_royalty_collection_fee(
+            royalty_fee_amount = calculateRoyaltyCollectionFee(
                 lists[list_id].nftAddress,
                 lists[list_id].ask
             );
