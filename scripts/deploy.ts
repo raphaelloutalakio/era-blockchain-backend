@@ -30,9 +30,9 @@ const main = async () => {
   );
 
   const omni_contract = await OmnichainERAfactory.deploy(
-    "Vishal",
-    "VD",
-    "Just for fun",
+    "Era-Homi",
+    "EHomi",
+    "ERAHOMI",
     80001,
     systemContract,
     era_contract.address

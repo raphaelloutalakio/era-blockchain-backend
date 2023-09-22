@@ -9,7 +9,15 @@ const ask2 = ethers.utils.parseEther("89");
 const parseEth = (val) => ethers.utils.parseEther(val);
 
 describe("ERA", function () {
-  let era, erc20Token, mintNFt, lister1, lister2, buyer1, buyer2;
+  let era,
+    erc20Token,
+    token2,
+    mintNFt,
+    lister1,
+    lister2,
+    buyer1,
+    buyer2,
+    offerer1;
 
   beforeEach(async () => {
     accounts = await ethers.getSigners();
@@ -17,11 +25,17 @@ describe("ERA", function () {
     lister2 = accounts[2];
     buyer1 = accounts[3];
     buyer2 = accounts[4];
+    offerer1 = accounts[5];
 
     // deploy erc20 contract
     const USDCToken = await ethers.getContractFactory("USDCToken");
     erc20Token = await USDCToken.deploy(amount);
     await erc20Token.deployed();
+
+    // another token
+    const USDCToken1 = await ethers.getContractFactory("USDCToken");
+    token2 = await USDCToken1.deploy(amount);
+    await token2.deployed();
 
     // deploy MintNFt.sl
     const MinftNFt = await ethers.getContractFactory("MinftNFt");
@@ -45,6 +59,10 @@ describe("ERA", function () {
     await erc20Token.transfer(buyer2.address, parseEth("1000"));
     await erc20Token.connect(buyer1).approve(era.address, parseEth("100"));
     await erc20Token.connect(buyer2).approve(era.address, parseEth("100"));
+
+    // tranfer amount to offer1
+    await token2.transfer(offerer1.address, parseEth("1000"));
+    await token2.connect(offerer1).approve(era.address, parseEth("1000"));
   });
 
   describe.only("Integrated test", function () {
@@ -101,6 +119,22 @@ describe("ERA", function () {
 
       const ownerOfNft1 = await mintNFt.ownerOf("1");
       assert.equal(ownerOfNft1, buyer1.address);
+
+      // offerer1 offeres 999 token2 for nft2
+      await expect(
+        era
+          .connect(offerer1)
+          .makeOffer("1", offerer1.address, token2.address, parseEth("999"))
+      ).to.emit(era, "Offered");
+
+      let nft2OffersArray = await era.listIdToOffers("1", "0");
+      console.log(nft2OffersArray);
+
+      // lister2 accepts offer of offerer1
+      await era.connect(lister2).acceptOffer("1", "0");
+      nft2OffersArray = await era.listIdToOffers("1", "0");
+      console.log(nft2OffersArray);
+      assert(nft2OffersArray.accepted);
     });
   });
 });

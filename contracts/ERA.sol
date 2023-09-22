@@ -42,16 +42,14 @@ contract ERA is AccessControl, ReentrancyGuard {
     );
 
     event Offered(
-        uint256 offerId,
         uint256 listId,
-        address nftAddress,
-        uint256 tokenId,
+        uint256 offerId,
+        address offerer,
         address paymentToken,
-        uint256 offerPrice,
-        address offerer
+        uint256 offerPrice
     );
 
-    event OfferRemoved(uint256 offerId);
+    event OfferRemoved(uint256 listId, uint256 offerId);
 
     event ItemPurchased(
         address indexed buyer,
@@ -126,14 +124,10 @@ contract ERA is AccessControl, ReentrancyGuard {
     // Mappings
     mapping(address => RoyaltyCollection) public royaltyCollections;
     mapping(uint256 => List) public lists;
-    mapping(uint256 => Offer) public offers;
+    mapping(uint => Offer[]) public listIdToOffers;
     mapping(uint256 => AuctionListing) public auctions;
     mapping(uint256 => NFTCollectionApplication) public collectionApplications;
     mapping(uint256 => Bundle) public bundles;
-
-    // arrays
-    uint256[] public listedItemIds;
-    uint256[] public activeOfferIds;
 
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -233,11 +227,12 @@ contract ERA is AccessControl, ReentrancyGuard {
             paymentToken: _paymentToken,
             ask: _ask,
             owner: address(this),
-            offers: 0
+            offers: 0,
+            active: true
         });
 
         lists[marketplace.listed] = newList;
-        listedItemIds.push(marketplace.listed);
+
         marketplace.listed = marketplace.listed + 1;
 
         emit Listed(
@@ -251,74 +246,68 @@ contract ERA is AccessControl, ReentrancyGuard {
         );
     }
 
-    function removeListedItem(uint256 list_id) private {
-        for (uint256 i = 0; i < listedItemIds.length; i++) {
-            if (listedItemIds[i] == list_id) {
-                listedItemIds[i] = listedItemIds[listedItemIds.length - 1];
-                listedItemIds.pop();
-                break;
-            }
-        }
-
-        delete lists[list_id];
-    }
-
     function changePrice(
         address _lister,
-        uint256 _list_id,
+        uint256 _listId,
         address _paymentToken,
         uint256 _ask
     ) external {
-        require(lists[_list_id].lister == _lister, "Not lister");
-        lists[_list_id].paymentToken = _paymentToken;
-        lists[_list_id].ask = _ask;
-        emit ChangePrice(_list_id, _paymentToken, _ask);
+        require(lists[_listId].lister == _lister, "Not lister");
+        List storage listedItem = lists[_listId];
+        listedItem.paymentToken = _paymentToken;
+        listedItem.ask = _ask;
+
+        emit ChangePrice(_listId, _paymentToken, _ask);
     }
 
-    function delist(address _lister, uint256 list_id) external {
-        require(lists[list_id].lister == _lister, "Not lister");
+    function delist(address _lister, uint256 _listId) external {
+        List storage listedItem = lists[_listId];
 
-        removeListedItem(list_id);
+        require(listedItem.lister == _lister, "Not lister");
+        require(listedItem.active, "NFT is not listed");
 
-        IERC721 asset = IERC721(lists[list_id].nftAddress);
-        asset.transferFrom(address(this), _lister, lists[list_id].tokenId);
+        IERC721 asset = IERC721(listedItem.nftAddress);
+        asset.transferFrom(address(this), _lister, listedItem.tokenId);
+        listedItem.active = false;
 
         emit ItemDelisted(
-            list_id,
-            lists[list_id].nftAddress,
-            lists[list_id].tokenId,
-            lists[list_id].paymentToken,
-            lists[list_id].ask,
-            lists[list_id].owner,
-            lists[list_id].lister
+            _listId,
+            listedItem.nftAddress,
+            listedItem.tokenId,
+            listedItem.paymentToken,
+            listedItem.ask,
+            listedItem.owner,
+            listedItem.lister
         );
     }
 
-    function buy(address _buyer, uint256 list_id) external nonReentrant {
+    function buy(address _buyer, uint256 _listId) external nonReentrant {
         uint256 fee_amount;
         uint256 royalty_fee_amount;
-        uint256 totalAmount = lists[list_id].ask;
+
+        List storage listedItem = lists[_listId];
+        require(listedItem.active, "NFT is not listed");
+
+        uint256 totalAmount = listedItem.ask;
 
         if (marketplace.fee_pbs > 0) {
             fee_amount = calculate_fees(
-                lists[list_id].ask,
+                listedItem.ask,
                 marketplace.fee_pbs,
                 marketplace.collateral_fee
             );
             totalAmount += fee_amount;
         }
 
-        console.log("asked value : ", lists[list_id].ask);
-
-        if (check_exists_royalty_collection(lists[list_id].nftAddress)) {
+        if (check_exists_royalty_collection(listedItem.nftAddress)) {
             royalty_fee_amount = calculateRoyaltyCollectionFee(
-                lists[list_id].nftAddress,
-                lists[list_id].ask
+                listedItem.nftAddress,
+                listedItem.ask
             );
             totalAmount += royalty_fee_amount;
         }
 
-        IERC20 _token = IERC20(lists[list_id].paymentToken);
+        IERC20 _token = IERC20(listedItem.paymentToken);
 
         require(_token.balanceOf(_buyer) >= totalAmount, "Insufficient funds");
 
@@ -337,8 +326,7 @@ contract ERA is AccessControl, ReentrancyGuard {
         if (royalty_fee_amount != 0) {
             require(
                 _token.transfer(
-                    royaltyCollections[lists[list_id].nftAddress]
-                        .royaltyCollector,
+                    royaltyCollections[listedItem.nftAddress].royaltyCollector,
                     royalty_fee_amount
                 ),
                 "Royalty fee transfer failed"
@@ -346,29 +334,29 @@ contract ERA is AccessControl, ReentrancyGuard {
         }
 
         require(
-            _token.transfer(lists[list_id].lister, lists[list_id].ask),
+            _token.transfer(listedItem.lister, listedItem.ask),
             "Transfer to lister failed"
         );
 
-        IERC721 asset = IERC721(lists[list_id].nftAddress);
-        asset.transferFrom(address(this), _buyer, lists[list_id].tokenId);
-
-        removeListedItem(list_id);
+        IERC721 asset = IERC721(listedItem.nftAddress);
+        asset.transferFrom(address(this), _buyer, listedItem.tokenId);
+        listedItem.active = false;
 
         emit ItemPurchased(
             _buyer,
-            lists[list_id].lister,
-            list_id,
-            lists[list_id].nftAddress,
-            lists[list_id].tokenId,
-            lists[list_id].paymentToken,
+            listedItem.lister,
+            _listId,
+            listedItem.nftAddress,
+            listedItem.tokenId,
+            listedItem.paymentToken,
             totalAmount
         );
     }
 
     function makeOffer(
-        address _offerer,
         uint256 _listId,
+        address _offerer, // caller
+        address _paymentToken,
         uint256 _offerPrice
     ) external {
         require(_offerPrice > 0, "Offer price must be greater than 0");
@@ -377,73 +365,110 @@ contract ERA is AccessControl, ReentrancyGuard {
         List storage listedItem = lists[_listId];
         require(listedItem.nftAddress != address(0), "Invalid nftAddress");
 
+        uint offerId = listIdToOffers[_listId].length;
+
         Offer memory newOffer = Offer({
-            offer_id: marketplace.offered,
-            listId: _listId,
-            nftAddress: listedItem.nftAddress,
-            tokenId: listedItem.tokenId,
-            paymentToken: listedItem.paymentToken,
-            offerPrice: _offerPrice,
+            offer_id: offerId,
             offerer: _offerer,
+            paymentToken: _paymentToken,
+            offerPrice: _offerPrice,
             accepted: false
         });
 
-        offers[marketplace.offered] = newOffer;
+        listIdToOffers[_listId].push(newOffer);
+        listedItem.offers += 1;
 
-        activeOfferIds.push(marketplace.offered);
+        emit Offered(_listId, offerId, _offerer, _paymentToken, _offerPrice);
+    }
 
-        marketplace.offered += 1;
+    function acceptOffer(
+        uint256 _listId,
+        uint256 _offerId
+    ) external nonReentrant {
+        uint256 fee_amount;
+        uint256 royalty_fee_amount;
+        uint256 totalAmount;
 
-        emit Offered(
-            marketplace.offered - 1,
+        List storage listedItem = lists[_listId];
+        Offer storage _offer = listIdToOffers[_listId][_offerId];
+
+        require(listedItem.active, "NFT is not listed");
+        require(!_offer.accepted, "Offer already accepted");
+
+        if (marketplace.fee_pbs > 0) {
+            fee_amount = calculate_fees(
+                _offer.offerPrice,
+                marketplace.fee_pbs,
+                marketplace.collateral_fee
+            );
+            totalAmount += fee_amount;
+        }
+
+        if (check_exists_royalty_collection(listedItem.nftAddress)) {
+            royalty_fee_amount = calculateRoyaltyCollectionFee(
+                listedItem.nftAddress,
+                _offer.offerPrice
+            );
+            totalAmount += royalty_fee_amount;
+        }
+
+        IERC20 _token = IERC20(_offer.paymentToken);
+
+        require(
+            _token.balanceOf(_offer.offerer) >= totalAmount,
+            "Insufficient funds"
+        );
+
+        require(
+            _token.transferFrom(_offer.offerer, address(this), totalAmount),
+            "Transfer from offer failed"
+        );
+
+        if (fee_amount != 0) {
+            require(
+                _token.transfer(marketplace.owner, fee_amount),
+                "Fee transfer failed"
+            );
+        }
+
+        if (royalty_fee_amount != 0) {
+            require(
+                _token.transfer(listedItem.lister, totalAmount - fee_amount),
+                "Royalty fee transfer failed"
+            );
+        }
+
+        IERC721 asset = IERC721(listedItem.nftAddress);
+        asset.transferFrom(address(this), _offer.offerer, listedItem.tokenId);
+        _offer.accepted = true;
+        listedItem.active = false;
+
+        emit ItemPurchased(
+            _offer.offerer,
+            listedItem.lister,
             _listId,
             listedItem.nftAddress,
             listedItem.tokenId,
             listedItem.paymentToken,
-            _offerPrice,
-            _offerer
+            totalAmount
         );
     }
 
-    function removeActiveOffer(uint256 _offerId) internal {
-        for (uint256 i = 0; i < activeOfferIds.length; i++) {
-            if (activeOfferIds[i] == _offerId) {
-                activeOfferIds[i] = activeOfferIds[activeOfferIds.length - 1];
-                activeOfferIds.pop();
-                break;
-            }
-        }
-    }
-
-    function acceptOffer(
-        address _lister,
+    // check offer is caller or not
+    function removeOffer(
+        address _offerer,
+        uint256 _listId,
         uint256 _offerId
-    ) external nonReentrant {
-        Offer storage offer = offers[_offerId];
-
-        require(lists[offer.listId].lister == _lister, "Not the lister");
-        require(!offer.accepted, "Offer already accepted");
-
-        IERC721(offer.nftAddress).transferFrom(
-            address(this),
-            offer.offerer,
-            offer.tokenId
+    ) public {
+        require(_listId < marketplace.listed, "List does not exist");
+        require(
+            _offerId < listIdToOffers[_listId].length,
+            "Offer does not exist"
         );
 
-        offer.accepted = true;
+        delete listIdToOffers[_listId][_offerId];
 
-        removeListedItem(offer.listId);
-        removeActiveOffer(_offerId);
-
-        emit ItemPurchased(
-            offer.offerer,
-            _lister,
-            offer.listId,
-            offer.nftAddress,
-            offer.tokenId,
-            offer.paymentToken,
-            offer.offerPrice
-        );
+        emit OfferRemoved(_listId, _offerId);
     }
 
     // Auction
@@ -715,33 +740,33 @@ contract ERA is AccessControl, ReentrancyGuard {
         );
     }
 
-    function getOffer(
-        uint256 _offerId
-    )
-        external
-        view
-        returns (
-            uint256 listId,
-            address nftAddress,
-            uint256 tokenId,
-            address paymentToken,
-            uint256 offerPrice,
-            address offerer,
-            bool accepted
-        )
-    {
-        require(_offerId < marketplace.offered, "Invalid offer ID");
-        Offer storage offer = offers[_offerId];
-        return (
-            offer.listId,
-            offer.nftAddress,
-            offer.tokenId,
-            offer.paymentToken,
-            offer.offerPrice,
-            offer.offerer,
-            offer.accepted
-        );
-    }
+    // function getOffer(
+    //     uint256 _offerId
+    // )
+    //     external
+    //     view
+    //     returns (
+    //         uint256 listId,
+    //         address nftAddress,
+    //         uint256 tokenId,
+    //         address paymentToken,
+    //         uint256 offerPrice,
+    //         address offerer,
+    //         bool accepted
+    //     )
+    // {
+    //     require(_offerId < marketplace.offered, "Invalid offer ID");
+    //     Offer storage offer = offers[_offerId];
+    //     return (
+    //         offer.listId,
+    //         offer.nftAddress,
+    //         offer.tokenId,
+    //         offer.paymentToken,
+    //         offer.offerPrice,
+    //         offer.offerer,
+    //         offer.accepted
+    //     );
+    // }
 
     function getAuction(
         uint256 _auctionId

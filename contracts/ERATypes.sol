@@ -21,16 +21,14 @@ struct List {
     uint256 ask;
     address owner;
     uint256 offers;
+    bool active;
 }
 
 struct Offer {
     uint256 offer_id;
-    uint256 listId;
-    address nftAddress;
-    uint256 tokenId;
+    address offerer;
     address paymentToken;
     uint256 offerPrice;
-    address offerer;
     bool accepted;
 }
 

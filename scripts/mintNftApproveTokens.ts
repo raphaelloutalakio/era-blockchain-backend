@@ -1,5 +1,5 @@
-import fs from "fs/promises"; // Import the 'promises' version of 'fs' for async file operations
-import { ethers } from "hardhat"; // Import ethers for contract interaction
+import fs from "fs/promises";
+import { ethers } from "hardhat";
 import contracts from "./contracts.json";
 
 const main = async () => {
@@ -7,6 +7,8 @@ const main = async () => {
     const omniContractAddress = contracts.Omni;
     const nftContractAddress = contracts.MintNFt;
     const eraContractAddress = contracts.ERA;
+
+    console.log(omniContractAddress, nftContractAddress, eraContractAddress);
 
     // Connect to the contracts using ethers
     const [signer] = await ethers.getSigners();
@@ -30,20 +32,20 @@ const main = async () => {
     console.log(`🔑 Using account: ${signer.address}\n`);
 
     for (let i = 0; i < 10; i++) {
-      // mint nft and approve era_contract
-      const tx = await nftContract.mintNFT("XYX");
-      await tx.wait();
+      try {
+        // mint nft and approve era_contract
+        const tx = await nftContract.mintNFT("XYX");
+        await tx.wait();
 
-      const nftId = await nftContract.getCurrentTokenId();
-      const approve_tx = await nftContract.approve(
-        eraContractAddress,
-        nftId.toString()
-      );
+        console.log(`Minted NFT #${i + 1}`);
 
-      await approve_tx.wait();
-
-      console.log("Approved : ", nftId.toString());
+        // You can add more specific error handling here if needed
+      } catch (mintError) {
+        console.error(`Error minting NFT #${i + 1}:`, mintError);
+      }
     }
+
+    // The rest of your code...
   } catch (error) {
     console.error("Error reading or interacting with contracts:", error);
   }
