@@ -6,6 +6,7 @@ import { prepareData, trackCCTX } from "@zetachain/toolkit/helpers";
 import contracts from "../scripts/contracts.json";
 
 const ethers = require("ethers");
+const parseEth = (val: any) => ethers.utils.parseEther(val);
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const [signer] = await hre.ethers.getSigners();
@@ -14,16 +15,17 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   let message, data;
   const select = args.select;
 
-  const omniContractAddress = contracts.Omni;
+  const omniContractAddress = contracts.OmnichainERA;
   const nftContractAddress = contracts.MintNFt;
   const eraContractAddress = contracts.ERA;
+  const paymentToken = contracts.USDCToken;
 
   console.log(contracts);
-  const paymentToken = "0x8a239DBDBc385218439623028cEf69506577b1d2";
-  const amountToListBuy = "22000000000000000000";
-  const nftToBuy = "1";
-  const toDList = "0";
-  const nftToList = "2";
+  const amountToListBuy = parseEth("2");
+  const buy = "0";
+  const dlist = "0";
+  const nftidlist = "1";
+  const offerListId = "0";
 
   if (select === "1") {
     // yourfunction
@@ -35,7 +37,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     data = prepareData(
       omniContractAddress,
       ["bytes4", "uint256"],
-      [message, "99"]
+      [message, "990"]
     );
   } else if (select === "2") {
     // list
@@ -49,24 +51,10 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     data = prepareData(
       omniContractAddress,
       ["bytes4", "address", "uint256", "address", "int256"],
-      [message, nftContractAddress, nftToList, paymentToken, amountToListBuy]
+      [message, nftContractAddress, nftidlist, paymentToken, amountToListBuy]
     );
   } else if (select === "3") {
-    // list
-    message = ethers.utils.hexDataSlice(
-      ethers.utils.keccak256(
-        ethers.utils.toUtf8Bytes("delist(address,uint256)")
-      ),
-      0,
-      4
-    );
-    data = prepareData(
-      omniContractAddress,
-      ["bytes4", "uint256"],
-      [message, toDList]
-    );
-  } else if (select === "4") {
-    // list
+    // buy
     message = ethers.utils.hexDataSlice(
       ethers.utils.keccak256(ethers.utils.toUtf8Bytes("buy(address,uint256)")),
       0,
@@ -75,14 +63,42 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     data = prepareData(
       omniContractAddress,
       ["bytes4", "uint256"],
-      [message, nftToBuy]
+      [message, buy]
+    );
+  } else if (select === "4") {
+    // makeOffer
+    message = ethers.utils.hexDataSlice(
+      ethers.utils.keccak256(
+        ethers.utils.toUtf8Bytes("makeOffer(address,uint256,address,uint256)")
+      ),
+      0,
+      4
+    );
+    data = prepareData(
+      omniContractAddress,
+      ["bytes4", "uint256", "address", "uint256"],
+      [message, , offerListId, paymentToken, amountToListBuy]
+    );
+  } else if (select === "5") {
+    // makeOffer
+    message = ethers.utils.hexDataSlice(
+      ethers.utils.keccak256(
+        ethers.utils.toUtf8Bytes("makeOffer(address,uint256,address,uint256)")
+      ),
+      0,
+      4
+    );
+    data = prepareData(
+      omniContractAddress,
+      ["bytes4", "uint256", "address", "uint256"],
+      [message, , offerListId, paymentToken, amountToListBuy]
     );
   }
 
   console.log("data to pass : ", data);
 
   const to = getAddress("tss", hre.network.name);
-  const value = parseEther("0.001");
+  const value = parseEther("0.0001");
 
   const tx = await signer.sendTransaction({ data, to, value });
 

@@ -2,73 +2,74 @@
 pragma solidity 0.8.7;
 
 struct Marketplace {
-    uint256 fee_pbs;
-    uint256 collateral_fee;
-    uint256 volume;
-    uint256 listed;
-    uint256 offered;
-    uint256 auctions;
+    uint fee_pbs;
+    uint collateral_fee;
+    uint volume;
+    uint listed;
+    uint offered;
+    uint auctioned;
     address owner;
-    uint256 nextApplicationId;
+    uint nextApplicationId;
 }
 
 struct List {
-    uint256 list_id;
+    uint list_id;
     address lister;
     address nftAddress;
-    uint256 tokenId;
+    uint tokenId;
     address paymentToken;
-    uint256 ask;
+    uint ask;
     address owner;
-    uint256 offers;
+    uint offers;
     bool active;
 }
 
 struct Offer {
-    uint256 offer_id;
+    uint offer_id;
     address offerer;
     address paymentToken;
-    uint256 offerPrice;
+    uint offerPrice;
     bool accepted;
 }
 
-struct AuctionListing {
-    uint256 auction_id;
+struct AuctionItem {
+    uint auctionId;
     address nftAddress;
-    uint256 item_id;
+    uint tokenId;
     address paymentToken;
-    uint256 min_bid;
-    uint256 min_bid_increment;
-    uint256 starts;
-    uint256 expires;
+    uint minBid;
+    uint minBidIncrement;
+    uint startTime;
+    uint expirationTime;
     address owner;
+    address seller;
     address highestBidder;
-    uint256 highestBid;
+    uint highestBid;
     bool active;
 }
 
 struct RoyaltyCollection {
     address creator;
-    uint256 bps;
+    uint bps;
     address royaltyCollector;
 }
 
 struct NFTCollectionApplication {
-    uint256 application_id;
+    uint application_id;
     address applicant;
     string collectionName;
     address NFTContract;
     address royaltyCollector;
-    uint256 bps;
+    uint bps;
     bool approved;
 }
 
 struct Bundle {
-    uint256 bundle_id;
+    uint bundle_id;
     address[] nftAddresses;
-    uint256[] tokenIds;
+    uint[] tokenIds;
     address[] paymentTokens;
-    uint256[] prices;
+    uint[] prices;
     address seller;
     bool active;
 }

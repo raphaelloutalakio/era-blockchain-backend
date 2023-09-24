@@ -72,39 +72,55 @@ contract OmnichainERA is zContract, ERC721URIStorage {
         ) {
             (
                 ,
-                address _nftAddress,
-                uint256 _tokenId,
-                address _coin,
-                uint256 _ask
+                address nftAddress,
+                uint256 tokenId,
+                address coin,
+                uint256 ask
             ) = abi.decode(
                     message,
                     (bytes4, address, uint256, address, uint256)
                 );
 
-            address _lister = BytesHelperLib.bytesToAddress(context.origin, 0);
+            address lister = BytesHelperLib.bytesToAddress(context.origin, 0);
 
-            eraContract.list(_lister, _nftAddress, _tokenId, _coin, _ask);
+            eraContract.list(lister, nftAddress, tokenId, coin, ask);
         } else if (selector == bytes4(keccak256("delist(address,uint256)"))) {
-            address _lister = BytesHelperLib.bytesToAddress(context.origin, 0);
-            (, uint256 list_id) = abi.decode(message, (bytes4, uint256));
+            address lister = BytesHelperLib.bytesToAddress(context.origin, 0);
+            (, uint256 listId) = abi.decode(message, (bytes4, uint256));
 
-            eraContract.delist(_lister, list_id);
+            eraContract.delist(lister, listId);
         } else if (
             selector ==
             bytes4(keccak256("changePrice(address,uint256,address,uint256)"))
         ) {
-            address _lister = BytesHelperLib.bytesToAddress(context.origin, 0);
-            (, uint256 _list_id, address _coin, uint256 _ask) = abi.decode(
+            address lister = BytesHelperLib.bytesToAddress(context.origin, 0);
+            (, uint256 listId, address coin, uint256 ask) = abi.decode(
                 message,
                 (bytes4, uint256, address, uint256)
             );
 
-            eraContract.changePrice(_lister, _list_id, _coin, _ask);
+            eraContract.changePrice(lister, listId, coin, ask);
         } else if (selector == bytes4(keccak256("buy(address,uint256)"))) {
-            address _buyer = BytesHelperLib.bytesToAddress(context.origin, 0);
-            (, uint256 _list_id) = abi.decode(message, (bytes4, uint256));
+            address buyer = BytesHelperLib.bytesToAddress(context.origin, 0);
+            (, uint256 listId) = abi.decode(message, (bytes4, uint256));
+            eraContract.buy(buyer, listId);
+        } else if (
+            selector ==
+            bytes4(keccak256("makeOffer(uint256,address,address,uint256)"))
+        ) {
+            (, uint256 listId, address paymentToken, uint256 offerPrice) = abi
+                .decode(message, (bytes4, uint256, address, uint256));
+            address offerer = BytesHelperLib.bytesToAddress(context.origin, 0);
+            eraContract.makeOffer(offerer, listId, paymentToken, offerPrice);
+        } else if (
+            selector == bytes4(keccak256("acceptOffer(uint256,uint256)"))
+        ) {
+            (, uint256 listId, uint256 offerId) = abi.decode(
+                message,
+                (bytes4, uint256, uint256)
+            );
 
-            eraContract.buy(_buyer, _list_id);
+            eraContract.acceptOffer(listId, offerId);
         } else {
             revert("Unknown function selector");
         }
