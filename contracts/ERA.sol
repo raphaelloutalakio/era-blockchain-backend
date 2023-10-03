@@ -538,53 +538,10 @@ contract ERA is AccessControl, ReentrancyGuard {
 
         IERC20 token = IERC20(auctionItem.paymentToken);
 
-        if (auctionItem.highestBidder == address(0)) {
-            uint fee_amount;
-            uint royalty_fee_amount;
-            uint totalAmount;
-
-            if (marketplace.fee_pbs > 0) {
-                fee_amount = calculate_fees(
-                    _bidAmount,
-                    marketplace.fee_pbs,
-                    marketplace.collateral_fee
-                );
-                totalAmount += fee_amount;
-            }
-
-            if (check_exists_royalty_collection(auctionItem.nftAddress)) {
-                royalty_fee_amount = calculateRoyaltyCollectionFee(
-                    auctionItem.nftAddress,
-                    _bidAmount
-                );
-                totalAmount += royalty_fee_amount;
-            }
-
-            require(
-                _bidAmount >=
-                    auctionItem.highestBid +
-                        auctionItem.minBidIncrement +
-                        totalAmount,
-                "Bid amount is too low"
-            );
-        } else {
-            require(
-                token.transfer(
-                    auctionItem.highestBidder,
-                    auctionItem.highestBid
-                ),
-                "Transfer to highestBidder failed"
-            );
-
-            require(
-                _bidAmount >=
-                    auctionItem.highestBid + auctionItem.minBidIncrement,
-                "Bid amount is too low"
-            );
-        }
-
-        auctionItem.highestBidder = _bidder;
-        auctionItem.highestBid = _bidAmount;
+        require(
+            _bidAmount >= auctionItem.highestBid + auctionItem.minBidIncrement,
+            "Bid amount is too low"
+        );
 
         require(token.balanceOf(_bidder) >= _bidAmount, "Insufficient funds");
 
@@ -592,6 +549,9 @@ contract ERA is AccessControl, ReentrancyGuard {
             token.transferFrom(_bidder, address(this), _bidAmount),
             "Transfer from bidder failed"
         );
+
+        auctionItem.highestBidder = _bidder;
+        auctionItem.highestBid = _bidAmount;
 
         emit BidPlaced(_auctionId, _bidder, _bidAmount);
     }
@@ -608,11 +568,6 @@ contract ERA is AccessControl, ReentrancyGuard {
             "Auction has not yet expired"
         );
 
-        // require(
-        //     msg.sender == auctionItem.seller,
-        //     "Only seller or owner can end the auction"
-        // );
-
         require(
             auctionItem.highestBidder != address(0),
             "No valid bids in this auction"
@@ -620,38 +575,10 @@ contract ERA is AccessControl, ReentrancyGuard {
 
         IERC20 token = IERC20(auctionItem.paymentToken);
 
-        uint fee_amount;
-        uint royalty_fee_amount;
-        uint totalAmount;
-
-        // if (marketplace.fee_pbs > 0) {
-        //     fee_amount = calculate_fees(
-        //         _bidAmount,
-        //         marketplace.fee_pbs,
-        //         marketplace.collateral_fee
-        //     );
-        //     totalAmount += fee_amount;
-        // }
-
-        // if (check_exists_royalty_collection(auctionItem.nftAddress)) {
-        //     royalty_fee_amount = calculateRoyaltyCollectionFee(
-        //         auctionItem.nftAddress,
-        //         _bidAmount
-        //     );
-        //     totalAmount += royalty_fee_amount;
-        // }
-
         require(
             token.transfer(auctionItem.seller, auctionItem.highestBid),
             "Transfer to seller failed"
         );
-
-        if (fee_amount != 0) {
-            require(
-                token.transfer(marketplace.owner, fee_amount),
-                "Fee transfer failed"
-            );
-        }
 
         IERC721 nft = IERC721(auctionItem.nftAddress);
         nft.transferFrom(

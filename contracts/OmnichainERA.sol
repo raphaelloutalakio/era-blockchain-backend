@@ -121,6 +121,16 @@ contract OmnichainERA is zContract, ERC721URIStorage {
             );
 
             eraContract.acceptOffer(listId, offerId);
+        } else if (
+            selector ==
+            bytes4(keccak256("removeOffer(address,uint256,uint256)"))
+        ) {
+            (, uint256 listId, uint256 offerId) = abi.decode(
+                message,
+                (bytes4, uint256, uint256)
+            );
+
+            eraContract.acceptOffer(listId, offerId);
         } else {
             revert("Unknown function selector");
         }
