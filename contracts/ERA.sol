@@ -12,9 +12,9 @@ import "./ERATypes.sol";
 import "hardhat/console.sol";
 
 contract ERA is AccessControl, ReentrancyGuard {
-    uint public storedData;
+    uint32 public storedData;
 
-    function yourFunction(uint newValue) public {
+    function yourFunction(uint32 newValue) public {
         storedData = newValue;
     }
 
@@ -242,7 +242,7 @@ contract ERA is AccessControl, ReentrancyGuard {
         );
     }
 
-    function delist(address _lister, uint _listId) external {
+    function delist(address _lister, uint64 _listId) external {
         List storage listedItem = lists[_listId];
 
         require(listedItem.lister == _lister, "Not lister");
@@ -265,9 +265,9 @@ contract ERA is AccessControl, ReentrancyGuard {
 
     function changePrice(
         address _lister,
-        uint _listId,
+        uint64 _listId,
         address _paymentToken,
-        uint _ask
+        uint64 _ask
     ) external {
         require(lists[_listId].lister == _lister, "Not lister");
         List storage listedItem = lists[_listId];
@@ -277,7 +277,7 @@ contract ERA is AccessControl, ReentrancyGuard {
         emit ChangePrice(_listId, _paymentToken, _ask);
     }
 
-    function buy(address _buyer, uint _listId) external nonReentrant {
+    function buy(address _buyer, uint64 _listId) external nonReentrant {
         uint fee_amount;
         uint royalty_fee_amount;
 
@@ -351,9 +351,9 @@ contract ERA is AccessControl, ReentrancyGuard {
 
     function makeOffer(
         address _offerer, // caller
-        uint _listId,
+        uint64 _listId,
         address _paymentToken,
-        uint _offerPrice
+        uint64 _offerPrice
     ) external {
         require(_offerPrice > 0, "Offer price must be greater than 0");
         require(_listId < marketplace.listed, "Invalid list ID");
@@ -377,7 +377,10 @@ contract ERA is AccessControl, ReentrancyGuard {
         emit Offered(_listId, offerId, _offerer, _paymentToken, _offerPrice);
     }
 
-    function acceptOffer(uint _listId, uint _offerId) external nonReentrant {
+    function acceptOffer(
+        uint64 _listId,
+        uint64 _offerId
+    ) external nonReentrant {
         uint fee_amount;
         uint royalty_fee_amount;
         uint totalAmount;
