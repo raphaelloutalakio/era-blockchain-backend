@@ -5,7 +5,7 @@ struct Marketplace {
     uint fee_pbs;
     uint collateral_fee;
     uint volume;
-    uint listed;
+    uint64 listed;
     uint offered;
     uint auctioned;
     address owner;
@@ -13,12 +13,12 @@ struct Marketplace {
 }
 
 struct List {
-    uint list_id;
+    uint64 list_id;
     address lister;
     address nftAddress;
-    uint tokenId;
+    uint64 tokenId;
     address paymentToken;
-    uint ask;
+    uint64 ask;
     address owner;
     uint offers;
     bool active;
@@ -28,14 +28,14 @@ struct Offer {
     uint offer_id;
     address offerer;
     address paymentToken;
-    uint offerPrice;
+    uint64 offerPrice;
     bool accepted;
 }
 
 struct AuctionItem {
     uint auctionId;
     address nftAddress;
-    uint tokenId;
+    uint64 tokenId;
     address paymentToken;
     uint minBid;
     uint minBidIncrement;
@@ -67,7 +67,7 @@ struct NFTCollectionApplication {
 struct Bundle {
     uint bundle_id;
     address[] nftAddresses;
-    uint[] tokenIds;
+    uint64[] tokenIds;
     address[] paymentTokens;
     uint[] prices;
     address seller;

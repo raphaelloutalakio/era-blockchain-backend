@@ -12,9 +12,9 @@ import "./ERATypes.sol";
 import "hardhat/console.sol";
 
 contract ERA is AccessControl, ReentrancyGuard {
-    uint32 public storedData;
+    uint64 public storedData;
 
-    function yourFunction(uint32 newValue) public {
+    function yourFunction(uint64 newValue) public {
         storedData = newValue;
     }
 
@@ -22,51 +22,51 @@ contract ERA is AccessControl, ReentrancyGuard {
 
     /// Events
     event Listed(
-        uint indexed list_id,
+        uint64 indexed list_id,
         address lister,
         address indexed nftAddress,
-        uint indexed tokenId,
+        uint64 indexed tokenId,
         address paymentToken,
-        uint ask,
+        uint64 ask,
         address owner
     );
 
     event ItemDelisted(
-        uint list_id,
+        uint64 list_id,
         address indexed nftAddress,
-        uint indexed tokenId,
+        uint64 indexed tokenId,
         address indexed paymentToken,
-        uint ask,
+        uint64 ask,
         address owner,
         address lister
     );
 
     event Offered(
-        uint indexed listId,
-        uint indexed offerId,
+        uint64 indexed listId,
+        uint64 indexed offerId,
         address offerer,
         address paymentToken,
-        uint offerPrice
+        uint64 offerPrice
     );
 
-    event OfferRemoved(uint indexed listId, uint indexed offerId);
+    event OfferRemoved(uint64 indexed listId, uint64 indexed offerId);
 
     event ItemPurchased(
         address indexed buyer,
         address indexed lister,
-        uint indexed listId,
+        uint64 indexed listId,
         address nftAddress,
-        uint tokenId,
+        uint64 tokenId,
         address paymentToken,
         uint totalPrice
     );
 
-    event ChangePrice(uint indexed item_id, address paymentToken, uint ask);
+    event ChangePrice(uint64 indexed item_id, address paymentToken, uint64 ask);
 
     event AuctionCreated(
         uint auctionId,
         address nftAddress,
-        uint tokenId,
+        uint64 tokenId,
         address paymentToken,
         uint minBid,
         uint minBidIncrement,
@@ -85,7 +85,7 @@ contract ERA is AccessControl, ReentrancyGuard {
     event AuctionEnded(
         uint auctionId,
         address nftAddress,
-        uint tokenId,
+        uint64 tokenId,
         address paymentToken,
         address winner,
         uint winningBid
@@ -109,7 +109,7 @@ contract ERA is AccessControl, ReentrancyGuard {
     event BundleCreated(
         uint bundle_id,
         address[] nftAddresses,
-        uint[] tokenIds,
+        uint64[] tokenIds,
         address[] paymentTokens,
         uint[] prices,
         address seller
@@ -121,7 +121,7 @@ contract ERA is AccessControl, ReentrancyGuard {
 
     // Mappings
     mapping(address => RoyaltyCollection) public royaltyCollections;
-    mapping(uint => List) public lists;
+    mapping(uint64 => List) public lists;
     mapping(uint => Offer[]) public listIdToOffers;
     mapping(uint => AuctionItem) public auctions;
     mapping(uint => NFTCollectionApplication) public collectionApplications;
@@ -201,9 +201,9 @@ contract ERA is AccessControl, ReentrancyGuard {
     function list(
         address _lister,
         address _nftAddress,
-        uint _tokenId,
+        uint64 _tokenId,
         address _paymentToken,
-        uint _ask
+        uint64 _ask
     ) external nonReentrant {
         require(_ask > 0, "Asked price should be greater than 0");
 
@@ -284,7 +284,7 @@ contract ERA is AccessControl, ReentrancyGuard {
         List storage listedItem = lists[_listId];
         require(listedItem.active, "NFT is not listed");
 
-        uint totalAmount = listedItem.ask;
+        uint256 totalAmount = uint256(listedItem.ask);
 
         if (marketplace.fee_pbs > 0) {
             fee_amount = calculate_fees(
@@ -361,7 +361,7 @@ contract ERA is AccessControl, ReentrancyGuard {
         List storage listedItem = lists[_listId];
         require(listedItem.nftAddress != address(0), "Invalid nftAddress");
 
-        uint offerId = listIdToOffers[_listId].length;
+        uint64 offerId = uint64(listIdToOffers[_listId].length);
 
         Offer memory newOffer = Offer({
             offer_id: offerId,
@@ -451,7 +451,11 @@ contract ERA is AccessControl, ReentrancyGuard {
     }
 
     // check offer is caller or not
-    function removeOffer(address _offerer, uint _listId, uint _offerId) public {
+    function removeOffer(
+        address _offerer,
+        uint64 _listId,
+        uint64 _offerId
+    ) public {
         require(_listId < marketplace.listed, "List does not exist");
         require(
             _offerId < listIdToOffers[_listId].length,
@@ -468,7 +472,7 @@ contract ERA is AccessControl, ReentrancyGuard {
     function listAuction(
         address _seller,
         address _nftAddress,
-        uint _tokenId,
+        uint64 _tokenId,
         address _paymentToken,
         uint _minBid,
         uint _minBidIncrement,
@@ -662,7 +666,7 @@ contract ERA is AccessControl, ReentrancyGuard {
     // Bundles
     function createBundle(
         address[] memory _nftAddresses,
-        uint[] memory _tokenIds,
+        uint64[] memory _tokenIds,
         address[] memory _paymentTokens,
         uint[] memory _prices
     ) external nonReentrant {
