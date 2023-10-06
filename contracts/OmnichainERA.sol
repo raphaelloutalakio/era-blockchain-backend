@@ -128,7 +128,7 @@ contract OmnichainERA is zContract, ERC721URIStorage {
                 eraContract.buy(_caller, _listId);
             } else if (
                 selector ==
-                bytes4(keccak256("makeOffer(uint64,address,address,uint64)"))
+                bytes4(keccak256("makeOffer(address,uint64,address,uint64)"))
             ) {
                 uint64 _listId = BytesHelperLib.bytesToUint64(message, 4);
                 address _paymentTokenAddress = BytesHelperLib.bytesToAddress(
@@ -143,12 +143,13 @@ contract OmnichainERA is zContract, ERC721URIStorage {
                     _offerPrice
                 );
             } else if (
-                selector == bytes4(keccak256("acceptOffer(uint64,uint64)"))
+                selector ==
+                bytes4(keccak256("acceptOffer(address,uint64,uint64)"))
             ) {
                 uint64 _listId = BytesHelperLib.bytesToUint64(message, 4);
                 uint64 _offerId = BytesHelperLib.bytesToUint64(message, 12);
 
-                eraContract.acceptOffer(_listId, _offerId);
+                eraContract.acceptOffer(_caller, _listId, _offerId);
             } else if (
                 selector ==
                 bytes4(keccak256("removeOffer(address,uint64,uint64)"))
@@ -206,7 +207,7 @@ contract OmnichainERA is zContract, ERC721URIStorage {
                 eraContract.buy(_caller, listId);
             } else if (
                 selector ==
-                bytes4(keccak256("makeOffer(uint64,address,address,uint64)"))
+                bytes4(keccak256("makeOffer(address,uint64,address,uint64)"))
             ) {
                 (, uint64 listId, address paymentToken, uint64 offerPrice) = abi
                     .decode(message, (bytes4, uint64, address, uint64));
@@ -218,14 +219,15 @@ contract OmnichainERA is zContract, ERC721URIStorage {
                     offerPrice
                 );
             } else if (
-                selector == bytes4(keccak256("acceptOffer(uint64,uint64)"))
+                selector ==
+                bytes4(keccak256("acceptOffer(address,uint64,uint64)"))
             ) {
                 (, uint64 listId, uint64 offerId) = abi.decode(
                     message,
                     (bytes4, uint64, uint64)
                 );
 
-                eraContract.acceptOffer(listId, offerId);
+                eraContract.acceptOffer(_caller, listId, offerId);
             } else if (
                 selector ==
                 bytes4(keccak256("removeOffer(address,uint64,uint64)"))

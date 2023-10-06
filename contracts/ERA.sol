@@ -278,6 +278,8 @@ contract ERA is AccessControl, ReentrancyGuard {
     }
 
     function buy(address _buyer, uint64 _listId) external nonReentrant {
+        require(_listId < marketplace.listed, "Invalid list ID");
+
         uint fee_amount;
         uint royalty_fee_amount;
 
@@ -350,7 +352,7 @@ contract ERA is AccessControl, ReentrancyGuard {
     }
 
     function makeOffer(
-        address _offerer, // caller
+        address _offerer,
         uint64 _listId,
         address _paymentToken,
         uint64 _offerPrice
@@ -378,14 +380,17 @@ contract ERA is AccessControl, ReentrancyGuard {
     }
 
     function acceptOffer(
+        address _lister,
         uint64 _listId,
         uint64 _offerId
     ) external nonReentrant {
+        List storage listedItem = lists[_listId];
+        require(listedItem.lister == _lister, "Not lister");
+
         uint fee_amount;
         uint royalty_fee_amount;
         uint totalAmount;
 
-        List storage listedItem = lists[_listId];
         Offer storage _offer = listIdToOffers[_listId][_offerId];
 
         require(listedItem.active, "NFT is not listed");
@@ -461,6 +466,8 @@ contract ERA is AccessControl, ReentrancyGuard {
             _offerId < listIdToOffers[_listId].length,
             "Offer does not exist"
         );
+        Offer storage _offer = listIdToOffers[_listId][_offerId];
+        require(_offer.offerer == _offerer, "Not the offerer");
 
         delete listIdToOffers[_listId][_offerId];
 
