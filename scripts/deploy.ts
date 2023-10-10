@@ -33,7 +33,7 @@ const deployContracts = async () => {
     "Era-Homi",
     "EHomi",
     "ERAHOMI",
-    80001,
+    // 80001,
     systemContractAddress,
     eraContract.address
   );

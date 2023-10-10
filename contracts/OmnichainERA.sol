@@ -15,7 +15,7 @@ contract OmnichainERA is zContract, ERC721URIStorage {
     error WrongChain(uint256 chainId);
 
     SystemContract public immutable systemContract;
-    uint256 public immutable chainId;
+    // uint256 public immutable chainId;
     uint256 constant BITCOIN = 18332;
     ERA public eraContract;
 
@@ -37,12 +37,12 @@ contract OmnichainERA is zContract, ERC721URIStorage {
         string memory name,
         string memory symbol,
         string memory _baseTokenURI,
-        uint256 chainID,
+        // uint256 chainID,
         address systemContractAddress,
         address _eraContractAddress
     ) ERC721(name, symbol) {
         systemContract = SystemContract(systemContractAddress);
-        chainId = chainID;
+        // chainId = chainID;
         baseTokenURI = _baseTokenURI;
         eraContract = ERA(_eraContractAddress);
     }
@@ -67,6 +67,16 @@ contract OmnichainERA is zContract, ERC721URIStorage {
         return val;
     }
 
+    function bytesToUint64(
+        bytes calldata data,
+        uint256 offset
+    ) public pure returns (uint64 output) {
+        bytes memory b = data[offset:offset + 8];
+        assembly {
+            output := mload(add(b, 8))
+        }
+    }
+
     function onCrossChainCall(
         zContext calldata context,
         address zrc20,
@@ -78,23 +88,23 @@ contract OmnichainERA is zContract, ERC721URIStorage {
         address _caller = BytesHelperLib.bytesToAddress(context.origin, 0);
         bytes4 selector;
 
-        if (chainId == BITCOIN) {
+        if (context.chainID == BITCOIN) {
             selector = getSelector(message);
 
             if (selector == bytes4(keccak256("yourFunction(uint64)"))) {
-                uint64 value = BytesHelperLib.bytesToUint64(message, 4);
+                uint64 value = bytesToUint64(message, 4);
                 eraContract.yourFunction(value);
             } else if (
                 selector ==
                 bytes4(keccak256("list(address,address,uint64,address,uint64)"))
             ) {
                 address _nftAddress = BytesHelperLib.bytesToAddress(message, 4);
-                uint64 _tokenId = BytesHelperLib.bytesToUint64(message, 24);
+                uint64 _tokenId = bytesToUint64(message, 24);
                 address _paymentTokenAddress = BytesHelperLib.bytesToAddress(
                     message,
                     32
                 );
-                uint64 _ask = BytesHelperLib.bytesToUint64(message, 52);
+                uint64 _ask = bytesToUint64(message, 52);
                 eraContract.list(
                     _caller,
                     _nftAddress,
@@ -105,18 +115,18 @@ contract OmnichainERA is zContract, ERC721URIStorage {
             } else if (
                 selector == bytes4(keccak256("delist(address,uint64)"))
             ) {
-                uint64 listId = BytesHelperLib.bytesToUint64(message, 4);
+                uint64 listId = bytesToUint64(message, 4);
                 eraContract.delist(_caller, listId);
             } else if (
                 selector ==
                 bytes4(keccak256("changePrice(address,uint64,address,uint64)"))
             ) {
-                uint64 _listId = BytesHelperLib.bytesToUint64(message, 4);
+                uint64 _listId = bytesToUint64(message, 4);
                 address _paymentTokenAddress = BytesHelperLib.bytesToAddress(
                     message,
                     12
                 );
-                uint64 _ask = BytesHelperLib.bytesToUint64(message, 32);
+                uint64 _ask = bytesToUint64(message, 32);
                 eraContract.changePrice(
                     _caller,
                     _listId,
@@ -124,18 +134,18 @@ contract OmnichainERA is zContract, ERC721URIStorage {
                     _ask
                 );
             } else if (selector == bytes4(keccak256("buy(address,uint64)"))) {
-                uint64 _listId = BytesHelperLib.bytesToUint64(message, 4);
+                uint64 _listId = bytesToUint64(message, 4);
                 eraContract.buy(_caller, _listId);
             } else if (
                 selector ==
                 bytes4(keccak256("makeOffer(address,uint64,address,uint64)"))
             ) {
-                uint64 _listId = BytesHelperLib.bytesToUint64(message, 4);
+                uint64 _listId = bytesToUint64(message, 4);
                 address _paymentTokenAddress = BytesHelperLib.bytesToAddress(
                     message,
                     12
                 );
-                uint64 _offerPrice = BytesHelperLib.bytesToUint64(message, 32);
+                uint64 _offerPrice = bytesToUint64(message, 32);
                 eraContract.makeOffer(
                     _caller,
                     _listId,
@@ -146,16 +156,16 @@ contract OmnichainERA is zContract, ERC721URIStorage {
                 selector ==
                 bytes4(keccak256("acceptOffer(address,uint64,uint64)"))
             ) {
-                uint64 _listId = BytesHelperLib.bytesToUint64(message, 4);
-                uint64 _offerId = BytesHelperLib.bytesToUint64(message, 12);
+                uint64 _listId = bytesToUint64(message, 4);
+                uint64 _offerId = bytesToUint64(message, 12);
 
                 eraContract.acceptOffer(_caller, _listId, _offerId);
             } else if (
                 selector ==
                 bytes4(keccak256("removeOffer(address,uint64,uint64)"))
             ) {
-                uint64 _listId = BytesHelperLib.bytesToUint64(message, 4);
-                uint64 _offerId = BytesHelperLib.bytesToUint64(message, 12);
+                uint64 _listId = bytesToUint64(message, 4);
+                uint64 _offerId = bytesToUint64(message, 12);
 
                 eraContract.removeOffer(_caller, _listId, _offerId);
             } else {
