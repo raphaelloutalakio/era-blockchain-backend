@@ -8,17 +8,21 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+
 import "./ERATypes.sol";
 import "hardhat/console.sol";
 
-contract ERA is AccessControl, ReentrancyGuard {
-    uint64 public storedData;
+contract ERA is ERC721URIStorage, ReentrancyGuard {
+    // Testing
+    uint8 public storedData;
+    event UpdtateStoredNumber(uint8 number);
 
-    function yourFunction(uint64 newValue) public {
+    function yourFunction(uint8 newValue) public {
         storedData = newValue;
+        emit UpdtateStoredNumber(storedData);
     }
-
-    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR");
 
     /// Events
     event Listed(
@@ -118,6 +122,14 @@ contract ERA is AccessControl, ReentrancyGuard {
     event BundlePurchased(uint bundle_id, address buyer, address seller);
 
     Marketplace public marketplace;
+    address public omnichainEraAddr;
+    address public owner;
+
+    // nft
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdCounter;
+    string private baseTokenURI;
+    mapping(uint256 => string) private tokenURIs;
 
     // Mappings
     mapping(address => RoyaltyCollection) public royaltyCollections;
@@ -127,25 +139,50 @@ contract ERA is AccessControl, ReentrancyGuard {
     mapping(uint => NFTCollectionApplication) public collectionApplications;
     mapping(uint => Bundle) public bundles;
 
-    constructor() {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    // modifier
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can call this function");
+        _;
+    }
+
+    constructor(
+        string memory name,
+        string memory symbol,
+        string memory _baseTokenURI
+    ) ERC721(name, symbol) {
         marketplace.fee_pbs = 150;
         marketplace.collateral_fee = 10000;
         marketplace.owner = msg.sender;
+        baseTokenURI = _baseTokenURI;
+        owner = msg.sender;
     }
 
-    function mutate_owner(address new_owner) public onlyRole(OPERATOR_ROLE) {
+    function setOmniChainEraContractAddress(
+        address _omnichainEraAddr
+    ) external onlyOwner {
+        omnichainEraAddr = _omnichainEraAddr;
+    }
+
+    function setBaseURI(string memory _baseTokenURI) external onlyOwner {
+        baseTokenURI = _baseTokenURI;
+    }
+
+    function mintNFT(address _to) external {
+        uint256 tokenId = _tokenIdCounter.current();
+        _mint(_to, tokenId);
+        _tokenIdCounter.increment();
+    }
+
+    function mutate_owner(address new_owner) public onlyOwner {
         marketplace.owner = new_owner;
     }
 
-    function mutate_fee_pbs(uint new_fee_pbs) public onlyRole(OPERATOR_ROLE) {
+    function mutate_fee_pbs(uint new_fee_pbs) public onlyOwner {
         if (new_fee_pbs < marketplace.collateral_fee)
             marketplace.fee_pbs = new_fee_pbs;
     }
 
-    function mutate_collateral_fee(
-        uint new_collateral_fee
-    ) public onlyRole(OPERATOR_ROLE) {
+    function mutate_collateral_fee(uint new_collateral_fee) public onlyOwner {
         marketplace.collateral_fee = new_collateral_fee;
     }
 
@@ -245,7 +282,12 @@ contract ERA is AccessControl, ReentrancyGuard {
     function delist(address _lister, uint64 _listId) external {
         List storage listedItem = lists[_listId];
 
-        require(listedItem.lister == _lister, "Not lister");
+        if (msg.sender == omnichainEraAddr) {
+            require(listedItem.lister == _lister, "Not lister");
+        } else {
+            require(msg.sender == listedItem.lister, "Not lister");
+        }
+
         require(listedItem.active, "NFT is not listed");
 
         IERC721 asset = IERC721(listedItem.nftAddress);
@@ -269,8 +311,15 @@ contract ERA is AccessControl, ReentrancyGuard {
         address _paymentToken,
         uint64 _ask
     ) external {
-        require(lists[_listId].lister == _lister, "Not lister");
         List storage listedItem = lists[_listId];
+        if (msg.sender == omnichainEraAddr) {
+            require(listedItem.lister == _lister, "Not lister");
+        } else {
+            require(msg.sender == listedItem.lister, "Not lister");
+        }
+
+        require(listedItem.active, "NFT is not listed");
+
         listedItem.paymentToken = _paymentToken;
         listedItem.ask = _ask;
 
@@ -385,7 +434,11 @@ contract ERA is AccessControl, ReentrancyGuard {
         uint64 _offerId
     ) external nonReentrant {
         List storage listedItem = lists[_listId];
-        require(listedItem.lister == _lister, "Not lister");
+        if (msg.sender == omnichainEraAddr) {
+            require(listedItem.lister == _lister, "Not lister");
+        } else {
+            require(msg.sender == listedItem.lister, "Not lister");
+        }
 
         uint fee_amount;
         uint royalty_fee_amount;
@@ -652,7 +705,7 @@ contract ERA is AccessControl, ReentrancyGuard {
 
     function approveCollectionApplication(
         uint applicationId
-    ) external onlyRole(OPERATOR_ROLE) {
+    ) external onlyOwner {
         require(
             applicationId < marketplace.nextApplicationId,
             "Invalid application ID"

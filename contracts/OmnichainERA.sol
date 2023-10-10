@@ -3,26 +3,16 @@ pragma solidity ^0.8.7;
 
 import "@zetachain/protocol-contracts/contracts/zevm/SystemContract.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/zContract.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@zetachain/toolkit/contracts/BytesHelperLib.sol";
-
 import "./ERA.sol";
 
-contract OmnichainERA is zContract, ERC721URIStorage {
-    error SenderNotSystemContract();
-    error WrongChain(uint256 chainId);
-
+contract OmnichainERA is zContract {
     SystemContract public immutable systemContract;
-    // uint256 public immutable chainId;
     uint256 constant BITCOIN = 18332;
     ERA public eraContract;
 
-    using Counters for Counters.Counter;
-    Counters.Counter private _tokenIdCounter;
-    string private baseTokenURI;
-    mapping(uint256 => string) private tokenURIs;
+    mapping(address => address) public beneficiary; // for bitcoin
 
     // modifier
     modifier onlySystem() {
@@ -33,38 +23,9 @@ contract OmnichainERA is zContract, ERC721URIStorage {
         _;
     }
 
-    constructor(
-        string memory name,
-        string memory symbol,
-        string memory _baseTokenURI,
-        // uint256 chainID,
-        address systemContractAddress,
-        address _eraContractAddress
-    ) ERC721(name, symbol) {
+    constructor(address systemContractAddress, address _eraContractAddress) {
         systemContract = SystemContract(systemContractAddress);
-        // chainId = chainID;
-        baseTokenURI = _baseTokenURI;
         eraContract = ERA(_eraContractAddress);
-    }
-
-    function setBaseURI(string memory _baseTokenURI) external {
-        baseTokenURI = _baseTokenURI;
-    }
-
-    function mintNFT(address _to, string memory _metadataURI) internal {
-        uint256 tokenId = _tokenIdCounter.current();
-        _mint(_to, tokenId);
-        _tokenIdCounter.increment();
-        _setTokenURI(tokenId, _metadataURI);
-    }
-
-    function getSelector(bytes memory input) public pure returns (bytes4) {
-        require(input.length >= 4, "Input byte array too short");
-        bytes4 val;
-        assembly {
-            val := mload(add(input, 32))
-        }
-        return val;
     }
 
     function bytesToUint64(
@@ -86,101 +47,95 @@ contract OmnichainERA is zContract, ERC721URIStorage {
         require(message.length > 0, "Empty message");
 
         address _caller = BytesHelperLib.bytesToAddress(context.origin, 0);
-        bytes4 selector;
+        uint8 action;
 
         if (context.chainID == BITCOIN) {
-            selector = getSelector(message);
+            address beneficiaryAddr = beneficiary[_caller];
+            action = uint8(message[0]);
 
-            if (selector == bytes4(keccak256("yourFunction(uint64)"))) {
-                uint64 value = bytesToUint64(message, 4);
+            if (action == 0) {
+                uint8 value = uint8(message[1]);
+
                 eraContract.yourFunction(value);
-            } else if (
-                selector ==
-                bytes4(keccak256("list(address,address,uint64,address,uint64)"))
-            ) {
-                address _nftAddress = BytesHelperLib.bytesToAddress(message, 4);
-                uint64 _tokenId = bytesToUint64(message, 24);
+            } else if (action == 1) {
+                address _nftAddress = BytesHelperLib.bytesToAddress(message, 1);
+                uint64 _tokenId = bytesToUint64(message, 21);
                 address _paymentTokenAddress = BytesHelperLib.bytesToAddress(
                     message,
-                    32
+                    29
                 );
-                uint64 _ask = bytesToUint64(message, 52);
+                uint64 _ask = bytesToUint64(message, 49);
+
                 eraContract.list(
-                    _caller,
+                    beneficiaryAddr,
                     _nftAddress,
                     _tokenId,
                     _paymentTokenAddress,
                     _ask
                 );
-            } else if (
-                selector == bytes4(keccak256("delist(address,uint64)"))
-            ) {
-                uint64 listId = bytesToUint64(message, 4);
-                eraContract.delist(_caller, listId);
-            } else if (
-                selector ==
-                bytes4(keccak256("changePrice(address,uint64,address,uint64)"))
-            ) {
-                uint64 _listId = bytesToUint64(message, 4);
+            } else if (action == 2) {
+                uint64 listId = bytesToUint64(message, 1);
+
+                eraContract.delist(beneficiaryAddr, listId);
+            } else if (action == 3) {
+                uint64 _listId = bytesToUint64(message, 1);
                 address _paymentTokenAddress = BytesHelperLib.bytesToAddress(
                     message,
-                    12
+                    9
                 );
-                uint64 _ask = bytesToUint64(message, 32);
+                uint64 _ask = bytesToUint64(message, 29);
+
                 eraContract.changePrice(
-                    _caller,
+                    beneficiaryAddr,
                     _listId,
                     _paymentTokenAddress,
                     _ask
                 );
-            } else if (selector == bytes4(keccak256("buy(address,uint64)"))) {
-                uint64 _listId = bytesToUint64(message, 4);
-                eraContract.buy(_caller, _listId);
-            } else if (
-                selector ==
-                bytes4(keccak256("makeOffer(address,uint64,address,uint64)"))
-            ) {
-                uint64 _listId = bytesToUint64(message, 4);
+            } else if (action == 4) {
+                uint64 _listId = bytesToUint64(message, 1);
+
+                eraContract.buy(beneficiaryAddr, _listId);
+            } else if (action == 5) {
+                uint64 _listId = bytesToUint64(message, 1);
                 address _paymentTokenAddress = BytesHelperLib.bytesToAddress(
                     message,
-                    12
+                    9
                 );
-                uint64 _offerPrice = bytesToUint64(message, 32);
+                uint64 _offerPrice = bytesToUint64(message, 29);
+
                 eraContract.makeOffer(
-                    _caller,
+                    beneficiaryAddr,
                     _listId,
                     _paymentTokenAddress,
                     _offerPrice
                 );
-            } else if (
-                selector ==
-                bytes4(keccak256("acceptOffer(address,uint64,uint64)"))
-            ) {
-                uint64 _listId = bytesToUint64(message, 4);
-                uint64 _offerId = bytesToUint64(message, 12);
+            } else if (action == 6) {
+                uint64 _listId = bytesToUint64(message, 1);
+                uint64 _offerId = bytesToUint64(message, 9);
 
-                eraContract.acceptOffer(_caller, _listId, _offerId);
-            } else if (
-                selector ==
-                bytes4(keccak256("removeOffer(address,uint64,uint64)"))
-            ) {
-                uint64 _listId = bytesToUint64(message, 4);
-                uint64 _offerId = bytesToUint64(message, 12);
+                eraContract.acceptOffer(beneficiaryAddr, _listId, _offerId);
+            } else if (action == 7) {
+                uint64 _listId = bytesToUint64(message, 1);
+                uint64 _offerId = bytesToUint64(message, 9);
 
-                eraContract.removeOffer(_caller, _listId, _offerId);
+                eraContract.removeOffer(beneficiaryAddr, _listId, _offerId);
+            } else if (action == 244) {
+                eraContract.mintNFT(beneficiaryAddr);
+            } else if (action == 255) {
+                beneficiary[_caller] = BytesHelperLib.bytesToAddress(
+                    message,
+                    1
+                );
             } else {
-                revert("Unknown function selector");
+                revert("Unknown action");
             }
         } else {
-            (selector) = abi.decode(message, (bytes4));
+            (action) = abi.decode(message, (uint8));
 
-            if (selector == bytes4(keccak256("yourFunction(uint64)"))) {
-                (, uint64 value) = abi.decode(message, (bytes4, uint64));
+            if (action == 0) {
+                (, uint8 value) = abi.decode(message, (uint8, uint8));
                 eraContract.yourFunction(value);
-            } else if (
-                selector ==
-                bytes4(keccak256("list(address,address,uint64,address,uint64)"))
-            ) {
+            } else if (action == 1) {
                 (
                     ,
                     address nftAddress,
@@ -189,7 +144,7 @@ contract OmnichainERA is zContract, ERC721URIStorage {
                     uint64 ask
                 ) = abi.decode(
                         message,
-                        (bytes4, address, uint64, address, uint64)
+                        (uint8, address, uint64, address, uint64)
                     );
 
                 eraContract.list(
@@ -199,28 +154,20 @@ contract OmnichainERA is zContract, ERC721URIStorage {
                     paymentToken,
                     ask
                 );
-            } else if (
-                selector == bytes4(keccak256("delist(address,uint64)"))
-            ) {
-                (, uint64 listId) = abi.decode(message, (bytes4, uint64));
+            } else if (action == 2) {
+                (, uint64 listId) = abi.decode(message, (uint8, uint64));
                 eraContract.delist(_caller, listId);
-            } else if (
-                selector ==
-                bytes4(keccak256("changePrice(address,uint64,address,uint64)"))
-            ) {
+            } else if (action == 3) {
                 (, uint64 listId, address payementToken, uint64 ask) = abi
-                    .decode(message, (bytes4, uint64, address, uint64));
+                    .decode(message, (uint8, uint64, address, uint64));
 
                 eraContract.changePrice(_caller, listId, payementToken, ask);
-            } else if (selector == bytes4(keccak256("buy(address,uint64)"))) {
-                (, uint64 listId) = abi.decode(message, (bytes4, uint64));
+            } else if (action == 4) {
+                (, uint64 listId) = abi.decode(message, (uint8, uint64));
                 eraContract.buy(_caller, listId);
-            } else if (
-                selector ==
-                bytes4(keccak256("makeOffer(address,uint64,address,uint64)"))
-            ) {
+            } else if (action == 5) {
                 (, uint64 listId, address paymentToken, uint64 offerPrice) = abi
-                    .decode(message, (bytes4, uint64, address, uint64));
+                    .decode(message, (uint8, uint64, address, uint64));
 
                 eraContract.makeOffer(
                     _caller,
@@ -228,28 +175,24 @@ contract OmnichainERA is zContract, ERC721URIStorage {
                     paymentToken,
                     offerPrice
                 );
-            } else if (
-                selector ==
-                bytes4(keccak256("acceptOffer(address,uint64,uint64)"))
-            ) {
+            } else if (action == 6) {
                 (, uint64 listId, uint64 offerId) = abi.decode(
                     message,
-                    (bytes4, uint64, uint64)
+                    (uint8, uint64, uint64)
                 );
 
                 eraContract.acceptOffer(_caller, listId, offerId);
-            } else if (
-                selector ==
-                bytes4(keccak256("removeOffer(address,uint64,uint64)"))
-            ) {
+            } else if (action == 7) {
                 (, uint64 listId, uint64 offerId) = abi.decode(
                     message,
-                    (bytes4, uint64, uint64)
+                    (uint8, uint64, uint64)
                 );
 
                 eraContract.removeOffer(_caller, listId, offerId);
+            } else if (action == 244) {
+                eraContract.mintNFT(_caller);
             } else {
-                revert("Unknown function selector");
+                revert("Unknown function action");
             }
         }
     }

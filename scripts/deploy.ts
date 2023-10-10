@@ -18,7 +18,7 @@ const deployContracts = async () => {
 
   // Deploy ERA contract
   const eraFactory = await hre.ethers.getContractFactory("ERA");
-  const eraContract = await eraFactory.deploy();
+  const eraContract = await eraFactory.deploy("Era-Homi", "EHomi", "ERAHOMI");
   await eraContract.deployed();
 
   console.log("ERA contract deployed at : ", eraContract.address);
@@ -28,12 +28,7 @@ const deployContracts = async () => {
   const omnichainERAFactory = await hre.ethers.getContractFactory(
     "OmnichainERA"
   );
-
   const omnichainEraContract = await omnichainERAFactory.deploy(
-    "Era-Homi",
-    "EHomi",
-    "ERAHOMI",
-    // 80001,
     systemContractAddress,
     eraContract.address
   );
@@ -44,10 +39,15 @@ const deployContracts = async () => {
     omnichainEraContract.address
   );
 
+  const tx = await eraContract.setOmniChainEraContractAddress(
+    omnichainEraContract.address
+  );
+  await tx.wait();
+
   // Deploy USDCToken contract
   const usdcTokenFactory = await hre.ethers.getContractFactory("USDCToken");
   const usdcContract = await usdcTokenFactory.deploy(
-    parseEther("93849384938490384038")
+    parseEther("9384938493849035584038")
   );
   await usdcContract.deployed();
 

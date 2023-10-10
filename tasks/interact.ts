@@ -17,10 +17,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   const omniContractAddress = contracts.OmnichainERA;
   const nftContractAddress = contracts.MintNFt;
-  const eraContractAddress = contracts.ERA;
   const paymentToken = contracts.USDCToken;
 
-  console.log(contracts);
   const amountToListBuy = parseEth("2");
   const buy = "0";
   const dlist = "0";
