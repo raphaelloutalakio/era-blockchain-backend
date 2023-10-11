@@ -15,15 +15,6 @@ import "./ERATypes.sol";
 import "hardhat/console.sol";
 
 contract ERA is ERC721URIStorage, ReentrancyGuard {
-    // Testing
-    uint8 public storedData;
-    event UpdtateStoredNumber(uint8 number);
-
-    function yourFunction(uint8 newValue) public {
-        storedData = newValue;
-        emit UpdtateStoredNumber(storedData);
-    }
-
     /// Events
     event Listed(
         uint64 indexed list_id,

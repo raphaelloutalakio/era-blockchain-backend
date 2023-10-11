@@ -148,12 +148,7 @@ contract OmnichainERA is zContract {
             if (beneficiaryAddr == address(0)) revert("Must have benificiary");
             action = uint8(message[0]);
 
-            if (action == 0) {
-                uint8 value = uint8(message[1]);
-
-                eraContract.yourFunction(value);
-                emit BitcoinCrossChainCall__0(action, value);
-            } else if (action == 1) {
+            if (action == 1) {
                 address _nftAddress = BytesHelperLib.bytesToAddress(message, 1);
                 uint64 _tokenId = bytesToUint64(message, 21);
                 address _paymentTokenAddress = BytesHelperLib.bytesToAddress(
@@ -271,11 +266,7 @@ contract OmnichainERA is zContract {
         } else {
             (action) = abi.decode(message, (uint8));
 
-            if (action == 0) {
-                (, uint8 value) = abi.decode(message, (uint8, uint8));
-                eraContract.yourFunction(value);
-                emit EVMChainCall__0(_caller, action, value);
-            } else if (action == 1) {
+            if (action == 1) {
                 (
                     ,
                     address nftAddress,
