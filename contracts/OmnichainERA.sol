@@ -14,6 +14,99 @@ contract OmnichainERA is zContract {
 
     mapping(address => address) public beneficiary; // for bitcoin
 
+    // Events for Bitcoin call
+    event BitcoinCrossChainCall__0(uint8 action, uint8 value);
+    event BitcoinCrossChainCall__1(
+        address indexed beneficiary,
+        uint8 action,
+        address nftAddress,
+        uint64 tokenId,
+        address paymentToken,
+        uint64 ask
+    );
+    event BitcoinCrossChainCall__2(
+        address indexed beneficiary,
+        uint8 action,
+        uint64 listId
+    );
+    event BitcoinCrossChainCall__3(
+        address indexed beneficiary,
+        uint8 action,
+        uint64 listId,
+        address paymentTokenAddress,
+        uint64 ask
+    );
+    event BitcoinCrossChainCall__4(
+        address indexed beneficiary,
+        uint8 action,
+        uint64 listId
+    );
+    event BitcoinCrossChainCall__5(
+        address indexed beneficiary,
+        uint8 action,
+        uint64 listId,
+        address paymentTokenAddress,
+        uint64 offerPrice
+    );
+    event BitcoinCrossChainCall__6(
+        address indexed beneficiary,
+        uint8 action,
+        uint64 listId,
+        uint64 offerId
+    );
+    event BitcoinCrossChainCall__7(
+        address indexed beneficiary,
+        uint8 action,
+        uint64 listId,
+        uint64 offerId
+    );
+    event BitcoinCrossChainCall__244(address indexed beneficiary, uint8 action);
+    event BitcoinCrossChainCall__255(
+        address indexed beneficiary,
+        uint8 action,
+        address indexed caller
+    );
+
+    // Events for Evm calls
+    event EVMChainCall__0(address indexed caller, uint8 action, uint8 value);
+    event EVMChainCall__1(
+        address indexed caller,
+        uint8 action,
+        address nftAddress,
+        uint64 tokenId,
+        address paymentToken,
+        uint64 ask
+    );
+    event EVMChainCall__2(address indexed caller, uint8 action, uint64 listId);
+    event EVMChainCall__3(
+        address indexed caller,
+        uint8 action,
+        uint64 listId,
+        address paymentTokenAddress,
+        uint64 ask
+    );
+    event EVMChainCall__4(address indexed caller, uint8 action, uint64 listId);
+    event EVMChainCall__5(
+        address indexed caller,
+        uint8 action,
+        uint64 listId,
+        address paymentTokenAddress,
+        uint64 offerPrice
+    );
+    event EVMChainCall__6(
+        address indexed caller,
+        uint8 action,
+        uint64 listId,
+        uint64 offerId
+    );
+    event EVMChainCall__7(
+        address indexed caller,
+        uint8 action,
+        uint64 listId,
+        uint64 offerId
+    );
+    event EVMChainCall__244(address indexed caller, uint8 action);
+
     // modifier
     modifier onlySystem() {
         require(
@@ -57,6 +150,7 @@ contract OmnichainERA is zContract {
                 uint8 value = uint8(message[1]);
 
                 eraContract.yourFunction(value);
+                emit BitcoinCrossChainCall__0(action, value);
             } else if (action == 1) {
                 address _nftAddress = BytesHelperLib.bytesToAddress(message, 1);
                 uint64 _tokenId = bytesToUint64(message, 21);
@@ -73,10 +167,20 @@ contract OmnichainERA is zContract {
                     _paymentTokenAddress,
                     _ask
                 );
+
+                emit BitcoinCrossChainCall__1(
+                    beneficiaryAddr,
+                    action,
+                    _nftAddress,
+                    _tokenId,
+                    _paymentTokenAddress,
+                    _ask
+                );
             } else if (action == 2) {
                 uint64 listId = bytesToUint64(message, 1);
 
                 eraContract.delist(beneficiaryAddr, listId);
+                emit BitcoinCrossChainCall__2(beneficiaryAddr, action, listId);
             } else if (action == 3) {
                 uint64 _listId = bytesToUint64(message, 1);
                 address _paymentTokenAddress = BytesHelperLib.bytesToAddress(
@@ -91,10 +195,18 @@ contract OmnichainERA is zContract {
                     _paymentTokenAddress,
                     _ask
                 );
+                emit BitcoinCrossChainCall__3(
+                    beneficiaryAddr,
+                    action,
+                    _listId,
+                    _paymentTokenAddress,
+                    _ask
+                );
             } else if (action == 4) {
                 uint64 _listId = bytesToUint64(message, 1);
 
                 eraContract.buy(beneficiaryAddr, _listId);
+                emit BitcoinCrossChainCall__4(beneficiaryAddr, action, _listId);
             } else if (action == 5) {
                 uint64 _listId = bytesToUint64(message, 1);
                 address _paymentTokenAddress = BytesHelperLib.bytesToAddress(
@@ -109,22 +221,47 @@ contract OmnichainERA is zContract {
                     _paymentTokenAddress,
                     _offerPrice
                 );
+                emit BitcoinCrossChainCall__5(
+                    beneficiaryAddr,
+                    action,
+                    _listId,
+                    _paymentTokenAddress,
+                    _offerPrice
+                );
             } else if (action == 6) {
                 uint64 _listId = bytesToUint64(message, 1);
                 uint64 _offerId = bytesToUint64(message, 9);
 
                 eraContract.acceptOffer(beneficiaryAddr, _listId, _offerId);
+                emit BitcoinCrossChainCall__6(
+                    beneficiaryAddr,
+                    action,
+                    _listId,
+                    _offerId
+                );
             } else if (action == 7) {
                 uint64 _listId = bytesToUint64(message, 1);
                 uint64 _offerId = bytesToUint64(message, 9);
 
                 eraContract.removeOffer(beneficiaryAddr, _listId, _offerId);
+                emit BitcoinCrossChainCall__7(
+                    beneficiaryAddr,
+                    action,
+                    _listId,
+                    _offerId
+                );
             } else if (action == 244) {
                 eraContract.mintNFT(beneficiaryAddr);
+                emit BitcoinCrossChainCall__244(beneficiaryAddr, action);
             } else if (action == 255) {
                 beneficiary[_caller] = BytesHelperLib.bytesToAddress(
                     message,
                     1
+                );
+                emit BitcoinCrossChainCall__255(
+                    beneficiaryAddr,
+                    action,
+                    _caller
                 );
             } else {
                 revert("Unknown action");
@@ -135,6 +272,7 @@ contract OmnichainERA is zContract {
             if (action == 0) {
                 (, uint8 value) = abi.decode(message, (uint8, uint8));
                 eraContract.yourFunction(value);
+                emit EVMChainCall__0(_caller, action, value);
             } else if (action == 1) {
                 (
                     ,
@@ -154,23 +292,43 @@ contract OmnichainERA is zContract {
                     paymentToken,
                     ask
                 );
+                emit EVMChainCall__1(
+                    _caller,
+                    action,
+                    nftAddress,
+                    tokenId,
+                    paymentToken,
+                    ask
+                );
             } else if (action == 2) {
                 (, uint64 listId) = abi.decode(message, (uint8, uint64));
+
                 eraContract.delist(_caller, listId);
+                emit EVMChainCall__2(_caller, action, listId);
             } else if (action == 3) {
                 (, uint64 listId, address payementToken, uint64 ask) = abi
                     .decode(message, (uint8, uint64, address, uint64));
 
                 eraContract.changePrice(_caller, listId, payementToken, ask);
+                emit EVMChainCall__4(_caller, action, listId);
             } else if (action == 4) {
                 (, uint64 listId) = abi.decode(message, (uint8, uint64));
+
                 eraContract.buy(_caller, listId);
+                emit EVMChainCall__4(_caller, action, listId);
             } else if (action == 5) {
                 (, uint64 listId, address paymentToken, uint64 offerPrice) = abi
                     .decode(message, (uint8, uint64, address, uint64));
 
                 eraContract.makeOffer(
                     _caller,
+                    listId,
+                    paymentToken,
+                    offerPrice
+                );
+                emit EVMChainCall__5(
+                    _caller,
+                    action,
                     listId,
                     paymentToken,
                     offerPrice
@@ -182,6 +340,7 @@ contract OmnichainERA is zContract {
                 );
 
                 eraContract.acceptOffer(_caller, listId, offerId);
+                emit EVMChainCall__6(_caller, action, listId, offerId);
             } else if (action == 7) {
                 (, uint64 listId, uint64 offerId) = abi.decode(
                     message,
@@ -189,8 +348,10 @@ contract OmnichainERA is zContract {
                 );
 
                 eraContract.removeOffer(_caller, listId, offerId);
+                emit EVMChainCall__7(_caller, action, listId, offerId);
             } else if (action == 244) {
                 eraContract.mintNFT(_caller);
+                emit EVMChainCall__244(_caller, action);
             } else {
                 revert("Unknown function action");
             }

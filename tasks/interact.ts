@@ -12,7 +12,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const [signer] = await hre.ethers.getSigners();
   console.log(`🔑 Using account: ${signer.address}\n`);
 
-  let selector, data;
+  console.log("Contracts : ", contracts);
+  let data;
   const select = args.select;
 
   const omniContractAddress = contracts.OmnichainERA;
@@ -20,102 +21,104 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const paymentToken = contracts.USDCToken;
 
   const amountToListBuy = parseEth("2");
-  const buy = "0";
+  const delistId = "0";
   const dlist = "0";
-  const nftidlist = "2";
+  const tokenIdToList = "1"; // tokenId of nft to list
   const offerListId = "0";
-  const idlist = "0";
 
-  if (select === "1") {
-    // yourfunction
-    selector = ethers.utils.hexDataSlice(
-      ethers.utils.keccak256(ethers.utils.toUtf8Bytes("yourFunction(uint64)")),
-      0,
-      4
-    );
-    data = prepareData(
-      omniContractAddress,
-      ["bytes4", "uint64"],
-      [selector, "990"]
-    );
-    console.log(selector);
-  } else if (select === "2") {
+  const listIdToBuy = "0"; // list id to buy
+  const listIdToOffer = "0"; //lsit it offer
+
+  if (select === "0") {
+    // store data
+    data = prepareData(omniContractAddress, ["uint8", "uint8"], [select, "90"]);
+  } else if (select === "1") {
     // list
-    selector = ethers.utils.hexDataSlice(
-      ethers.utils.keccak256(
-        ethers.utils.toUtf8Bytes("list(address,address,uint64,address,uint64)")
-      ),
-      0,
-      4
-    );
     data = prepareData(
       omniContractAddress,
-      ["bytes4", "address", "uint64", "address", "uint64"],
-      [selector, nftContractAddress, nftidlist, paymentToken, amountToListBuy]
+      ["uint8", "address", "uint64", "address", "uint64"],
+      [select, nftContractAddress, tokenIdToList, paymentToken, amountToListBuy]
     );
+
     console.log(
-      omniContractAddress,
-      selector,
+      "Select : ",
+      select,
+      " NFTContractAddr : ",
       nftContractAddress,
-      nftidlist,
+      " tokenId : ",
+      tokenIdToList,
+      " paymentToken : ",
       paymentToken,
+      " amount to buy : ",
       amountToListBuy
     );
-  } else if (select === "3") {
-    // buy
-    selector = ethers.utils.hexDataSlice(
-      ethers.utils.keccak256(ethers.utils.toUtf8Bytes("buy(address,uint64)")),
-      0,
-      4
-    );
+  } else if (select === "2") {
+    // delist
+
     data = prepareData(
       omniContractAddress,
-      ["bytes4", "uint64"],
-      [selector, buy]
+      ["uint8", "uint64"],
+      [select, delistId]
+    );
+  } else if (select === "3") {
+    // changePrice
+
+    data = prepareData(
+      omniContractAddress,
+      ["uint8", "uint64", "address", "uint64"],
+      [select, offerListId, paymentToken, amountToListBuy]
     );
   } else if (select === "4") {
-    // makeOffer
-    selector = ethers.utils.hexDataSlice(
-      ethers.utils.keccak256(
-        ethers.utils.toUtf8Bytes("makeOffer(address,uint64,address,uint64)")
-      ),
-      0,
-      4
-    );
+    // buy
+
     data = prepareData(
       omniContractAddress,
-      ["bytes4", "uint64", "address", "uint64"],
-      [selector, , offerListId, paymentToken, amountToListBuy]
+      ["uint8", "uint64", "uint64"],
+      [select, listIdToBuy, offerListId]
     );
   } else if (select === "5") {
-    // makeOffer
-    selector = ethers.utils.hexDataSlice(
-      ethers.utils.keccak256(
-        ethers.utils.toUtf8Bytes("acceptOffer(address,uint64,uint64)")
-      ),
-      0,
-      4
-    );
+    // make offer
+
     data = prepareData(
       omniContractAddress,
-      ["bytes4", "uint64", "uint64"],
-      [selector, , idlist, offerListId]
+      ["uint8", "uint64", "address", "uint64"],
+      [select, listIdToOffer, paymentToken, amountToListBuy]
     );
+  } else if (select === "6") {
+    // accept offer
+
+    data = prepareData(
+      omniContractAddress,
+      ["uint8", "uint64", "uint64"],
+      [select, listIdToOffer, offerListId]
+    );
+  } else if (select === "7") {
+    // accept offer
+
+    data = prepareData(
+      omniContractAddress,
+      ["uint8", "uint64", "uint64"],
+      [select, listIdToOffer, offerListId]
+    );
+  } else if (select === "244") {
+    // mint
+
+    data = prepareData(omniContractAddress, ["uint8"], [select]);
   }
   // 5fe578480cd2C11B313c70AeD4360FdF6C9d0Df92b05bc6e548D690Af43f3ab3D041cac56A396D19A0b3F6Bf00000000000000012dC9E747A4A1B1F74eaF26b5AF0A8381600572d91BC16D674EC80000
 
   console.log("data to pass : ", data);
 
-  //   const to = getAddress("tss", hre.network.name);
-  //   const value = parseEther("0.0001");
+  const to = getAddress("tss", hre.network.name);
+  const value = parseEther("0.0001");
 
-  //   const tx = await signer.sendTransaction({ data, to, value });
+  const tx = await signer.sendTransaction({ data, to, value });
 
-  //   console.log(`
-  // 🚀 Successfully broadcasted a token transfer transaction on ${hre.network.name} network.
-  // 📝 Transaction hash: ${tx.hash}
-  // `);
-  //   await trackCCTX(tx.hash);
+  console.log(`
+  🚀 Successfully broadcasted a token transfer transaction on ${hre.network.name} network.
+  📝 Transaction hash: ${tx.hash}
+  `);
+  await trackCCTX(tx.hash);
 };
 
 task("interact", "Interact with the contract")
