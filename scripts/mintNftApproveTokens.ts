@@ -30,7 +30,7 @@ const main = async () => {
 
     console.log(`🔑 Using account: ${signer.address}\n`);
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 20; i++) {
       try {
         // mint nft and approve era_contract
         const tx = await nftContract.mintNFT("XYX");
