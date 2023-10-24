@@ -145,7 +145,6 @@ contract OmnichainERA is zContract {
         if (context.chainID == BITCOIN) {
             address beneficiaryAddr = beneficiary[_caller];
 
-            if (beneficiaryAddr == address(0)) revert("Must have benificiary");
             action = uint8(message[0]);
 
             if (action == 1) {

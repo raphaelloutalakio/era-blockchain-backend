@@ -23,10 +23,10 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const amountToListBuy = parseEth("2");
   const delistId = "0";
   const dlist = "0";
-  const tokenIdToList = "1"; // tokenId of nft to list
+  const tokenIdToList = "2"; // tokenId of nft to list
   const offerListId = "0";
 
-  const listIdToBuy = "0"; // list id to buy
+  const listIdToBuy = "1"; // list id to buy
   const listIdToOffer = "0"; //lsit it offer
 
   if (select === "0") {
@@ -73,8 +73,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
     data = prepareData(
       omniContractAddress,
-      ["uint8", "uint64", "uint64"],
-      [select, listIdToBuy, offerListId]
+      ["uint8", "uint64"],
+      [select, listIdToBuy]
     );
   } else if (select === "5") {
     // make offer
