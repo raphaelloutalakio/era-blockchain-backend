@@ -164,6 +164,14 @@ contract ERA is ERC721URIStorage, ReentrancyGuard {
         _tokenIdCounter.increment();
     }
 
+    function setTokenURI(uint64 _tokenId, string memory _newTokenURI) public {
+        require(
+            ownerOf(_tokenId) == msg.sender,
+            "Only the owner can set the URI"
+        );
+        _setTokenURI(_tokenId, _newTokenURI);
+    }
+
     function mutate_owner(address new_owner) public onlyOwner {
         marketplace.owner = new_owner;
     }
