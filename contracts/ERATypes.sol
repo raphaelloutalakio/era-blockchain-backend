@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity ^0.8.4;
 
 struct Marketplace {
     uint fee_pbs;
@@ -7,25 +7,25 @@ struct Marketplace {
     uint volume;
     uint64 listed;
     uint offered;
-    uint auctioned;
+    uint64 auctioned;
     address owner;
-    uint nextApplicationId;
+    uint64 nextApplicationId;
 }
 
 struct List {
     uint64 list_id;
     address lister;
     address nftAddress;
-    uint64 tokenId;
+    bytes32 tokenId;
     address paymentToken;
-    uint64 ask;
+    uint128 ask;
     address owner;
     uint offers;
     bool active;
 }
 
 struct Offer {
-    uint offer_id;
+    uint64 offer_id;
     address offerer;
     address paymentToken;
     uint64 offerPrice;
@@ -33,18 +33,18 @@ struct Offer {
 }
 
 struct AuctionItem {
-    uint auctionId;
+    uint64 auctionId;
     address nftAddress;
     uint64 tokenId;
     address paymentToken;
-    uint minBid;
-    uint minBidIncrement;
-    uint startTime;
-    uint expirationTime;
+    uint32 minBid;
+    uint32 minBidIncrement;
+    uint32 startTime;
+    uint32 expirationTime;
     address owner;
     address seller;
     address highestBidder;
-    uint highestBid;
+    uint128 highestBid;
     bool active;
 }
 

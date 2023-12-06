@@ -1,72 +1,89 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { parseEther } from "@ethersproject/units";
-import { getAddress } from "@zetachain/protocol-contracts";
-import { prepareData, trackCCTX } from "@zetachain/toolkit/helpers";
+import { ethers } from 'hardhat';
+import * as dotenv from 'dotenv';
+import { abi as UP_ABI } from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
+import { MyToken__factory, ERA__factory, ERAHomiNft__factory, UniversalReceiverDelegate__factory } from '../typechain-types';
 import fs from "fs";
 import { join } from "path";
+import contractData from "../contracts.json";
 
-const deployContracts = async () => {
-  const [signer] = await hre.ethers.getSigners();
-  console.log(`🔑 Using account: ${signer.address}\n`);
 
-  // Deploy MinftNFt contract
-  const MinftNftFactory = await hre.ethers.getContractFactory("MinftNFt");
-  const minftNftContract = await MinftNftFactory.deploy();
-  await minftNftContract.deployed();
+// load env vars
+dotenv.config();
 
-  console.log("MinftNFt contract deployed at : ", minftNftContract.address);
+// Update those values in the .env file
+const { UP_ADDR, PRIVATE_KEY } = process.env;
 
-  // Deploy ERA contract
-  const eraFactory = await hre.ethers.getContractFactory("ERA");
-  const eraContract = await eraFactory.deploy("Era-Homi", "EHomi", "ERAHOMI");
-  await eraContract.deployed();
+// MyTOken : 0xB5150F1d51318Ad0C5B8F4dF4dB8DA3Db0886c2c
 
-  console.log("ERA contract deployed at : ", eraContract.address);
 
-  // Deploy OmnichainERA contract
-  const systemContractAddress = getAddress("systemContract", "zeta_testnet");
-  const omnichainERAFactory = await hre.ethers.getContractFactory(
-    "OmnichainERA"
-  );
-  const omnichainEraContract = await omnichainERAFactory.deploy(
-    systemContractAddress,
-    eraContract.address
-  );
-  await omnichainEraContract.deployed();
+async function main() {
 
-  console.log(
-    "OmnichainERA contract deployed at : ",
-    omnichainEraContract.address
-  );
+    // setup provider
+    const provider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
+    // setup signer (the browser extension controller)
+    const signer = new ethers.Wallet(PRIVATE_KEY as string, provider);
 
-  const tx = await eraContract.setOmniChainEraContractAddress(
-    omnichainEraContract.address
-  );
-  await tx.wait();
+    let era, myToken, eraHomiNFT, delegate;
 
-  // Deploy USDCToken contract
-  const usdcTokenFactory = await hre.ethers.getContractFactory("USDCToken");
-  const usdcContract = await usdcTokenFactory.deploy(
-    parseEther("9384938493849035584038")
-  );
-  await usdcContract.deployed();
+    // USDC Token
+    myToken = await new MyToken__factory(signer).deploy({ gasLimit: 20_000_000 });
+    console.log("Mytoken : ", myToken.target);
 
-  // Define contract addresses
-  const contractAddresses = {
-    MintNFt: minftNftContract.address,
-    ERA: eraContract.address,
-    OmnichainERA: omnichainEraContract.address,
-    USDCToken: usdcContract.address,
-  };
+    // era = await new ERA__factory(signer).deploy({ gasLimit: 20_000_000 });
+    // console.log("Main ERA : ", era.target);
 
-  try {
-    const filePath = join(__dirname, "./contracts.json");
+    // // ERA Homi NFT
+    //  eraHomiNFT = await new ERAHomiNft__factory(signer).deploy(signer.address, { gasLimit: 20_000_000 });
+    // console.log("ERA HOMI NFT : ", eraHomiNFT.target);
 
-    fs.writeFileSync(filePath, JSON.stringify(contractAddresses, null, 2));
-    console.log("Contracts written to contracts.json");
-  } catch (error) {
-    console.error("Error writing contracts to contracts.json:", error);
-  }
-};
+    // // // universal receciver delegate
+    //  delegate = await new UniversalReceiverDelegate__factory(signer).deploy({ gasLimit: 20_000_000 })
+    // console.log("delegate contract : ", delegate.target)
 
-deployContracts();
+    //     const urd = await new UniversalReceiverDelegate__factory(signer).deploy({ gasLimit: 20_000_000 });
+    //     console.log((urd.target));
+    // }
+
+    const contractAddresses = {
+        ERA: era?.target || contractData?.contracts?.ERA,
+        ERAHomiNft: eraHomiNFT?.target || contractData?.contracts.ERAHomiNft,
+        MyToken: myToken?.target || contractData?.contracts?.MyToken,
+        UniversalReceiverDelegate: delegate?.target || contractData?.contracts?.UniversalReceiverDelegate,
+    };
+
+    try {
+        const filePath = join(__dirname, "../contracts.json");
+
+        const currentDate = new Date();
+        const formattedDate = currentDate.toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+        const formattedTime = currentDate.toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: 'numeric',
+            minute: 'numeric'
+        });
+
+        const formattedDateTime = `${formattedDate}, ${formattedTime}`;
+
+        const dataToWrite = {
+            date: formattedDateTime,
+            contracts: contractAddresses
+        };
+
+
+        fs.writeFileSync(filePath, JSON.stringify(dataToWrite, null, 2));
+        console.log("Contracts and timestamp written to contracts.json");
+    } catch (error) {
+        console.error("Error writing contracts and timestamp to contracts.json:", error);
+    }
+
+}
+
+main()
+    .catch((error) => {
+        console.error(error);
+        process.exit(1);
+    });

@@ -5,8 +5,8 @@ echo "1. Check balances"
 echo "2. Compile"
 echo "3. Deploy"
 echo "4. Flatten contract"
-echo "5. Mint script"
-echo "6. Interact task"
+echo "5. AddingAUniversalReceiverDelegate script"
+echo "6. CallingFunctionOnDeployedContract script"
 echo "7. CCTX"
 echo "8. Run tests"
 echo "9. Exit"
@@ -20,37 +20,37 @@ case $choice in
     ;;
   2)
     echo "Compiling contracts..."
-    npx hardhat compile --force
+    npx hardhat compile 
     ;;
   3)
     echo "Executing deploy script"
     echo "Script path: scripts/deploy.ts"
-    npx hardhat run scripts/deploy.ts --network zeta_testnet
+    npx hardhat run scripts/deploy.ts --network luksoTestnet
     ;;
   4)
     echo "Select a contract to flatten:"
     echo "1. USDCToken.sol"
     echo "2. ERA.sol"
-    echo "3. OmnichainERA.sol"
-    echo "4. MinftNFt.sol"
+    echo "3. ERAHomiNft.sol"
+    echo "4. UniversalReceiverDelegate.sol"
     read contract_choice
 
     case $contract_choice in
       1)
-        contract_filename="USDCToken.sol"
-        output_filename="USD.txt"
+        contract_filename="MyToken.sol"
+        output_filename="MyToken.txt"
         ;;
       2)
         contract_filename="ERA.sol"
         output_filename="ERA.txt"
         ;;
       3)
-        contract_filename="OmnichainERA.sol"
-        output_filename="OmnichainERA.txt"
+        contract_filename="ERAHomiNft.sol"
+        output_filename="ERAHomiNft.txt"
         ;;
       4)
-        contract_filename="MinftNFt.sol"
-        output_filename="MinftNFt.txt"
+        contract_filename="UniversalReceiverDelegate.sol"
+        output_filename="UniversalReceiverDelegate.txt"
         ;;
       *)
         echo "Invalid contract choice"
@@ -62,15 +62,14 @@ case $choice in
     npx hardhat flatten contracts/"$contract_filename" > Verify/"$output_filename"
     ;;
   5)
-    echo "Executing mint script"
-    echo "Script path: scripts/mintNftApproveTokens.ts"
-    npx hardhat run scripts/mintNftApproveTokens.ts --network zeta_testnet
+    echo "Executing AddingAUniversalReceiverDelegate script"
+    echo "Script path: scripts/AddingAUniversalReceiverDelegate.ts"
+    npx hardhat run scripts/AddingAUniversalReceiverDelegate.ts --network luksoTestnet
     ;;
   6)
-    echo "Enter the value for --select option:"
-    read select_option
-    echo "Executing 'npx hardhat interact --network mumbai_testnet --select $select_option'"
-    npx hardhat interact --network mumbai_testnet --select "$select_option"
+    echo "Executing CallingFunctionOnDeployedContract script"
+    echo "Script path: scripts/CallingFunctionOnDeployedContract.ts"
+    npx hardhat run scripts/CallingFunctionOnDeployedContract.ts --network luksoTestnet
     ;;
   7)
     echo "Enter the transaction hash:"
