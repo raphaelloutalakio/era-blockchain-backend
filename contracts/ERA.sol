@@ -394,274 +394,281 @@ contract ERA is ReentrancyGuard {
         );
     }
 
-    // function makeOffer(
-    //     address _offerer,
-    //     uint64 _listId,
-    //     address _paymentToken,
-    //     uint64 _offerPrice
-    // ) external {
-    //     require(_offerPrice > 0, "Offer price must be greater than 0");
-    //     require(_listId < marketplace.listed, "Invalid list ID");
+    function makeOffer(
+        uint64 _listId,
+        address _paymentToken,
+        uint64 _offerPrice
+    ) external {
+        require(_offerPrice > 0, "Offer price must be greater than 0");
+        require(_listId < marketplace.listed, "Invalid list ID");
 
-    //     List storage listedItem = lists[_listId];
-    //     require(listedItem.nftAddress != address(0), "Invalid nftAddress");
+        List storage listedItem = lists[_listId];
+        require(listedItem.nftAddress != address(0), "Invalid nftAddress");
 
-    //     uint64 offerId = uint64(listIdToOffers[_listId].length);
+        uint64 offerId = uint64(listIdToOffers[_listId].length);
 
-    //     Offer memory newOffer = Offer({
-    //         offer_id: offerId,
-    //         offerer: _offerer,
-    //         paymentToken: _paymentToken,
-    //         offerPrice: _offerPrice,
-    //         accepted: false
-    //     });
+        Offer memory newOffer = Offer({
+            offer_id: offerId,
+            offerer: msg.sender,
+            paymentToken: _paymentToken,
+            offerPrice: _offerPrice,
+            accepted: false
+        });
 
-    //     listIdToOffers[_listId].push(newOffer);
-    //     listedItem.offers += 1;
+        listIdToOffers[_listId].push(newOffer);
+        listedItem.offers += 1;
 
-    //     emit Offered(_listId, offerId, _offerer, _paymentToken, _offerPrice);
-    // }
+        emit Offered(_listId, offerId, msg.sender, _paymentToken, _offerPrice);
+    }
 
-    // function acceptOffer(
-    //     address _lister,
-    //     uint64 _listId,
-    //     uint64 _offerId
-    // ) external nonReentrant {
-    //     List storage listedItem = lists[_listId];
-    //     if (msg.sender == omnichainEraAddr) {
-    //         require(listedItem.lister == _lister, "Not lister");
-    //     } else {
-    //         require(msg.sender == listedItem.lister, "Not lister");
-    //     }
+    function acceptOffer(
+        uint64 _listId,
+        uint64 _offerId
+    ) external nonReentrant {
+        List storage listedItem = lists[_listId];
 
-    //     uint fee_amount;
-    //     uint royalty_fee_amount;
-    //     uint totalAmount;
+        require(listedItem.lister == msg.sender, "Not lister");
 
-    //     Offer storage _offer = listIdToOffers[_listId][_offerId];
+        uint fee_amount;
+        uint royalty_fee_amount;
+        uint totalAmount;
 
-    //     require(listedItem.active, "NFT is not listed");
-    //     require(!_offer.accepted, "Offer already accepted");
+        Offer storage _offer = listIdToOffers[_listId][_offerId];
 
-    //     if (marketplace.fee_pbs > 0) {
-    //         fee_amount = calculate_fees(
-    //             _offer.offerPrice,
-    //             marketplace.fee_pbs,
-    //             marketplace.collateral_fee
-    //         );
-    //         totalAmount += fee_amount;
-    //     }
+        require(listedItem.active, "NFT is not listed");
+        require(!_offer.accepted, "Offer already accepted");
 
-    //     if (check_exists_royalty_collection(listedItem.nftAddress)) {
-    //         royalty_fee_amount = calculateRoyaltyCollectionFee(
-    //             listedItem.nftAddress,
-    //             _offer.offerPrice
-    //         );
-    //         totalAmount += royalty_fee_amount;
-    //     }
+        if (marketplace.fee_pbs > 0) {
+            fee_amount = calculate_fees(
+                _offer.offerPrice,
+                marketplace.fee_pbs,
+                marketplace.collateral_fee
+            );
+            totalAmount += fee_amount;
+        }
 
-    //     IERC20 token = IERC20(_offer.paymentToken);
+        if (check_exists_royalty_collection(listedItem.nftAddress)) {
+            royalty_fee_amount = calculateRoyaltyCollectionFee(
+                listedItem.nftAddress,
+                _offer.offerPrice
+            );
+            totalAmount += royalty_fee_amount;
+        }
 
-    //     require(
-    //         token.balanceOf(_offer.offerer) >= totalAmount,
-    //         "Insufficient funds"
-    //     );
+        ILSP7DigitalAsset token = ILSP7DigitalAsset(_offer.paymentToken);
+        require(
+            token.balanceOf(_offer.offerer) >= totalAmount,
+            "Insufficient funds"
+        );
 
-    //     require(
-    //         token.transferFrom(_offer.offerer, address(this), totalAmount),
-    //         "Transfer from offer failed"
-    //     );
+        token.transfer(_offer.offerer, address(this), totalAmount, true, "");
 
-    //     if (fee_amount != 0) {
-    //         require(
-    //             token.transfer(marketplace.owner, fee_amount),
-    //             "Fee transfer failed"
-    //         );
-    //     }
+        if (fee_amount != 0) {
+            token.transfer(
+                address(this),
+                marketplace.owner,
+                fee_amount,
+                true,
+                ""
+            );
+        }
 
-    //     if (royalty_fee_amount != 0) {
-    //         require(
-    //             token.transfer(listedItem.lister, totalAmount - fee_amount),
-    //             "Royalty fee transfer failed"
-    //         );
-    //     }
+        if (royalty_fee_amount != 0) {
+            token.transfer(
+                address(this),
+                listedItem.lister,
+                totalAmount - fee_amount,
+                true,
+                ""
+            );
+        }
 
-    //     IERC721 asset = IERC721(listedItem.nftAddress);
-    //     asset.transferFrom(address(this), _offer.offerer, listedItem.tokenId);
-    //     _offer.accepted = true;
-    //     listedItem.active = false;
+        ILSP8IdentifiableDigitalAsset asset = ILSP8IdentifiableDigitalAsset(
+            listedItem.nftAddress
+        );
 
-    //     emit ItemPurchased(
-    //         _offer.offerer,
-    //         listedItem.lister,
-    //         _listId,
-    //         listedItem.nftAddress,
-    //         listedItem.tokenId,
-    //         listedItem.paymentToken,
-    //         totalAmount
-    //     );
-    // }
+        asset.transfer(
+            address(this),
+            _offer.offerer,
+            listedItem.tokenId,
+            true,
+            ""
+        );
+        _offer.accepted = true;
+        listedItem.active = false;
 
-    // // check offer is caller or not
-    // function removeOffer(
-    //     address _offerer,
-    //     uint64 _listId,
-    //     uint64 _offerId
-    // ) public {
-    //     require(_listId < marketplace.listed, "List does not exist");
-    //     require(
-    //         _offerId < listIdToOffers[_listId].length,
-    //         "Offer does not exist"
-    //     );
-    //     Offer storage _offer = listIdToOffers[_listId][_offerId];
-    //     require(_offer.offerer == _offerer, "Not the offerer");
+        emit ItemPurchased(
+            _offer.offerer,
+            listedItem.lister,
+            _listId,
+            listedItem.nftAddress,
+            listedItem.tokenId,
+            listedItem.paymentToken,
+            totalAmount
+        );
+    }
 
-    //     delete listIdToOffers[_listId][_offerId];
+    function removeOffer(uint64 _listId, uint64 _offerId) public {
+        require(_listId < marketplace.listed, "List does not exist");
+        require(
+            _offerId < listIdToOffers[_listId].length,
+            "Offer does not exist"
+        );
+        Offer storage _offer = listIdToOffers[_listId][_offerId];
+        require(_offer.offerer == msg.sender, "Not the offerer");
 
-    //     emit OfferRemoved(_listId, _offerId);
-    // }
+        delete listIdToOffers[_listId][_offerId];
 
-    // // Auction
-    // // Function to facilitate NFT auctions, allowing users to bid on items
-    // function listAuction(
-    //     address _seller,
-    //     address _nftAddress,
-    //     bytes32 _tokenId,
-    //     address payable _paymentToken,
-    //     uint32 _minBid,
-    //     uint32 _minBidIncrement,
-    //     uint32 _startTime,
-    //     uint32 _expirationTime
-    // ) external nonReentrant {
-    //     if (_startTime < block.timestamp || _expirationTime < _startTime)
-    //         revert("InvalidStartDate");
-    //     if (_startTime < block.timestamp) revert("StartTimeMustBeInTheFuture");
-    //     if (_expirationTime < _startTime)
-    //         revert("ExpirationTimeMustBeAfterStartTime");
+        emit OfferRemoved(_listId, _offerId);
+    }
 
-    //     IERC721 asset = IERC721(_nftAddress);
-    //     asset.transferFrom(_seller, address(this), _tokenId);
+    // Auction
+    // Function to facilitate NFT auctions, allowing users to bid on items
+    function listAuction(
+        address _nftAddress,
+        bytes32 _tokenId,
+        address payable _paymentToken,
+        uint32 _minBid,
+        uint32 _minBidIncrement,
+        uint32 _startTime,
+        uint32 _expirationTime
+    ) external nonReentrant {
+        if (_startTime < block.timestamp || _expirationTime < _startTime)
+            revert("InvalidStartDate");
+        if (_startTime < block.timestamp) revert("StartTimeMustBeInTheFuture");
+        if (_expirationTime < _startTime)
+            revert("ExpirationTimeMustBeAfterStartTime");
 
-    //     require(
-    //         asset.ownerOf(_tokenId) == address(this),
-    //         "NFT not transferred"
-    //     );
+        ILSP8IdentifiableDigitalAsset asset = ILSP8IdentifiableDigitalAsset(
+            _nftAddress
+        );
 
-    //     AuctionItem memory newAuctionItem = AuctionItem({
-    //         auctionId: marketplace.auctioned,
-    //         nftAddress: _nftAddress,
-    //         tokenId: _tokenId,
-    //         paymentToken: _paymentToken,
-    //         minBid: _minBid,
-    //         minBidIncrement: _minBidIncrement,
-    //         startTime: _startTime,
-    //         expirationTime: _expirationTime,
-    //         owner: address(this),
-    //         seller: _seller,
-    //         highestBidder: address(0),
-    //         highestBid: 0,
-    //         active: true
-    //     });
+        asset.transfer(msg.sender, address(this), _tokenId, true, "");
 
-    //     auctions[marketplace.auctioned] = newAuctionItem;
-    //     marketplace.auctioned += 1;
+        require(
+            asset.tokenOwnerOf(_tokenId) == address(this),
+            "NFT not transferred"
+        );
 
-    //     emit AuctionCreated(
-    //         marketplace.auctioned - 1,
-    //         newAuctionItem.nftAddress,
-    //         newAuctionItem.tokenId,
-    //         newAuctionItem.paymentToken,
-    //         newAuctionItem.minBid,
-    //         newAuctionItem.minBidIncrement,
-    //         newAuctionItem.startTime,
-    //         newAuctionItem.expirationTime,
-    //         address(this),
-    //         newAuctionItem.seller
-    //     );
-    // }
+        AuctionItem memory newAuctionItem = AuctionItem({
+            auctionId: marketplace.auctioned,
+            nftAddress: _nftAddress,
+            tokenId: _tokenId,
+            paymentToken: _paymentToken,
+            minBid: _minBid,
+            minBidIncrement: _minBidIncrement,
+            startTime: _startTime,
+            expirationTime: _expirationTime,
+            owner: address(this),
+            seller: msg.sender,
+            highestBidder: address(0),
+            highestBid: 0,
+            active: true
+        });
 
-    // function placeBid(
-    //     address _bidder,
-    //     uint64 _auctionId,
-    //     uint128 _bidAmount
-    // ) external nonReentrant {
-    //     require(_auctionId < marketplace.auctioned, "Auction does not exist");
+        auctions[marketplace.auctioned] = newAuctionItem;
+        marketplace.auctioned += 1;
 
-    //     AuctionItem storage auctionItem = auctions[_auctionId];
+        emit AuctionCreated(
+            marketplace.auctioned - 1,
+            newAuctionItem.nftAddress,
+            newAuctionItem.tokenId,
+            newAuctionItem.paymentToken,
+            newAuctionItem.minBid,
+            newAuctionItem.minBidIncrement,
+            newAuctionItem.startTime,
+            newAuctionItem.expirationTime,
+            address(this),
+            newAuctionItem.seller
+        );
+    }
 
-    //     require(auctionItem.active, "Auction is not active");
+    function placeBid(
+        uint64 _auctionId,
+        uint128 _bidAmount
+    ) external nonReentrant {
+        require(_auctionId < marketplace.auctioned, "Auction does not exist");
 
-    //     require(
-    //         block.timestamp > auctionItem.startTime &&
-    //             block.timestamp < auctionItem.expirationTime,
-    //         "Auction is not currently open for bids"
-    //     );
+        AuctionItem storage auctionItem = auctions[_auctionId];
 
-    //     IERC20 token = IERC20(auctionItem.paymentToken);
+        require(auctionItem.active, "Auction is not active");
 
-    //     require(
-    //         _bidAmount >= auctionItem.highestBid + auctionItem.minBidIncrement,
-    //         "Bid amount is too low"
-    //     );
+        require(
+            block.timestamp > auctionItem.startTime &&
+                block.timestamp < auctionItem.expirationTime,
+            "Auction is not currently open for bids"
+        );
 
-    //     require(token.balanceOf(_bidder) >= _bidAmount, "Insufficient funds");
+        ILSP7DigitalAsset token = ILSP7DigitalAsset(auctionItem.paymentToken);
 
-    //     require(
-    //         token.transferFrom(_bidder, address(this), _bidAmount),
-    //         "Transfer from bidder failed"
-    //     );
+        require(
+            _bidAmount >= auctionItem.highestBid + auctionItem.minBidIncrement,
+            "Bid amount is too low"
+        );
 
-    //     auctionItem.highestBidder = _bidder;
-    //     auctionItem.highestBid = _bidAmount;
+        require(
+            token.balanceOf(msg.sender) >= _bidAmount,
+            "Insufficient funds"
+        );
 
-    //     emit BidPlaced(_auctionId, _bidder, _bidAmount);
-    // }
+        token.transfer(msg.sender, address(this), _bidAmount, true, "");
 
-    // function endAuction(uint _auctionId) external nonReentrant {
-    //     require(_auctionId < marketplace.auctioned, "Auction does not exist");
+        auctionItem.highestBidder = msg.sender;
+        auctionItem.highestBid = _bidAmount;
 
-    //     AuctionItem storage auctionItem = auctions[_auctionId];
+        emit BidPlaced(_auctionId, msg.sender, _bidAmount);
+    }
 
-    //     require(auctionItem.active, "Auction is not active");
+    function endAuction(uint _auctionId) external nonReentrant {
+        require(_auctionId < marketplace.auctioned, "Auction does not exist");
+        AuctionItem storage auctionItem = auctions[_auctionId];
+        require(auctionItem.active, "Auction is not active");
+        require(
+            block.timestamp >= auctionItem.expirationTime,
+            "Auction has not yet expired"
+        );
 
-    //     require(
-    //         block.timestamp >= auctionItem.expirationTime,
-    //         "Auction has not yet expired"
-    //     );
+        require(
+            auctionItem.highestBidder != address(0),
+            "No valid bids in this auction"
+        );
 
-    //     require(
-    //         auctionItem.highestBidder != address(0),
-    //         "No valid bids in this auction"
-    //     );
+        ILSP7DigitalAsset token = ILSP7DigitalAsset(auctionItem.paymentToken);
 
-    //     IERC20 token = IERC20(auctionItem.paymentToken);
+        token.transfer(
+            address(this),
+            auctionItem.seller,
+            auctionItem.highestBid,
+            true,
+            ""
+        );
 
-    //     require(
-    //         token.transfer(auctionItem.seller, auctionItem.highestBid),
-    //         "Transfer to seller failed"
-    //     );
+        ILSP8IdentifiableDigitalAsset asset = ILSP8IdentifiableDigitalAsset(
+            auctionItem.nftAddress
+        );
 
-    //     IERC721 nft = IERC721(auctionItem.nftAddress);
-    //     nft.transferFrom(
-    //         address(this),
-    //         auctionItem.highestBidder,
-    //         auctionItem.tokenId
-    //     );
+        asset.transfer(
+            address(this),
+            auctionItem.highestBidder,
+            auctionItem.tokenId,
+            true,
+            ""
+        );
 
-    //     auctionItem.active = false;
+        auctionItem.active = false;
 
-    //     emit AuctionEnded(
-    //         _auctionId,
-    //         auctionItem.nftAddress,
-    //         auctionItem.tokenId,
-    //         auctionItem.paymentToken,
-    //         auctionItem.highestBidder,
-    //         auctionItem.highestBid
-    //     );
-    // }
+        emit AuctionEnded(
+            _auctionId,
+            auctionItem.nftAddress,
+            auctionItem.tokenId,
+            auctionItem.paymentToken,
+            auctionItem.highestBidder,
+            auctionItem.highestBid
+        );
+    }
 
-    // // Collection Launch
-    // // Function to allow projects to apply for launching NFT collections on the platform
+    // Collection Launch
+    // Function to allow projects to apply for launching NFT collections on the platform
     // function applyForCollectionLaunch(
     //     string memory _collectionName,
     //     address _NFTContract,
