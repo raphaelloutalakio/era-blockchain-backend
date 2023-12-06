@@ -35,7 +35,7 @@ struct Offer {
 struct AuctionItem {
     uint64 auctionId;
     address nftAddress;
-    uint64 tokenId;
+    bytes32 tokenId;
     address paymentToken;
     uint32 minBid;
     uint32 minBidIncrement;
@@ -67,7 +67,7 @@ struct NFTCollectionApplication {
 struct Bundle {
     uint bundle_id;
     address[] nftAddresses;
-    uint64[] tokenIds;
+    bytes32[] tokenIds;
     address[] paymentTokens;
     uint[] prices;
     address seller;
