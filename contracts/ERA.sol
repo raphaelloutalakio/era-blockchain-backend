@@ -22,7 +22,7 @@ contract ERA is ERC721URIStorage, ReentrancyGuard {
         address indexed nftAddress,
         uint64 indexed tokenId,
         address paymentToken,
-        uint64 ask,
+        uint128 ask,
         address owner
     );
 
@@ -31,7 +31,7 @@ contract ERA is ERC721URIStorage, ReentrancyGuard {
         address indexed nftAddress,
         uint64 indexed tokenId,
         address indexed paymentToken,
-        uint64 ask,
+        uint128 ask,
         address owner,
         address lister
     );
@@ -239,7 +239,7 @@ contract ERA is ERC721URIStorage, ReentrancyGuard {
         address _nftAddress,
         uint64 _tokenId,
         address _paymentToken,
-        uint64 _ask
+        uint128 _ask
     ) external nonReentrant {
         require(_ask > 0, "Asked price should be greater than 0");
 
@@ -532,11 +532,11 @@ contract ERA is ERC721URIStorage, ReentrancyGuard {
         address _seller,
         address _nftAddress,
         uint64 _tokenId,
-        address _paymentToken,
-        uint _minBid,
-        uint _minBidIncrement,
-        uint _startTime,
-        uint _expirationTime
+        address payable _paymentToken,
+        uint32 _minBid,
+        uint32 _minBidIncrement,
+        uint32 _startTime,
+        uint32 _expirationTime
     ) external nonReentrant {
         if (_startTime < block.timestamp || _expirationTime < _startTime)
             revert("InvalidStartDate");
@@ -587,8 +587,8 @@ contract ERA is ERC721URIStorage, ReentrancyGuard {
 
     function placeBid(
         address _bidder,
-        uint _auctionId,
-        uint _bidAmount
+        uint64 _auctionId,
+        uint128 _bidAmount
     ) external nonReentrant {
         require(_auctionId < marketplace.auctioned, "Auction does not exist");
 
