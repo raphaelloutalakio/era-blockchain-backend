@@ -13,25 +13,7 @@ import "./ERATypes.sol";
 import "hardhat/console.sol";
 
 contract ERA is ReentrancyGuard {
-    // function universalReceiverDelegate(
-    //     address sender,
-    //     uint256 /*value*/,
-    //     bytes32 typeId,
-    //     bytes memory /*data*/
-    // ) public view returns (bytes memory) {
-    //     if (
-    //         typeId ==
-    //         0x20804611b3e2ea21c480dc465142210acf4a2485947541770ec1fb87dee4a55c
-    //     ) {}
-
-    //     return "";
-    // }
-
-    // function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
-    //     return interfaceId == type(ILSP1UniversalReceiverDelegate).interfaceId;
-    // }
-
-    /// Events
+       /// Events
     event Listed(
         uint64 indexed list_id,
         address lister,
