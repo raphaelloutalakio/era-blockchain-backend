@@ -135,20 +135,20 @@ contract ERA is ReentrancyGuard {
         owner = msg.sender;
     }
 
-    function mutate_owner(address new_owner) public onlyOwner {
+    function mutateOwner(address new_owner) public onlyOwner {
         marketplace.owner = new_owner;
     }
 
-    function mutate_fee_pbs(uint new_fee_pbs) public onlyOwner {
+    function mutateFeesPbs(uint new_fee_pbs) public onlyOwner {
         if (new_fee_pbs < marketplace.collateral_fee)
             marketplace.fee_pbs = new_fee_pbs;
     }
 
-    function mutate_collateral_fee(uint new_collateral_fee) public onlyOwner {
+    function mutateCollateralFees(uint new_collateral_fee) public onlyOwner {
         marketplace.collateral_fee = new_collateral_fee;
     }
 
-    function calculate_fees(
+    function calculateFees(
         uint amount,
         uint fee_pbs,
         uint collateral_fee
@@ -301,7 +301,7 @@ contract ERA is ReentrancyGuard {
         uint256 totalAmount = uint256(listedItem.ask);
 
         if (marketplace.fee_pbs > 0) {
-            fee_amount = calculate_fees(
+            fee_amount = calculateFees(
                 listedItem.ask,
                 marketplace.fee_pbs,
                 marketplace.collateral_fee
@@ -417,7 +417,7 @@ contract ERA is ReentrancyGuard {
         require(!_offer.accepted, "Offer already accepted");
 
         if (marketplace.fee_pbs > 0) {
-            fee_amount = calculate_fees(
+            fee_amount = calculateFees(
                 _offer.offerPrice,
                 marketplace.fee_pbs,
                 marketplace.collateral_fee
