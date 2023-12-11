@@ -13,7 +13,6 @@ dotenv.config();
 // Update those values in the .env file
 const { UP_ADDR, PRIVATE_KEY } = process.env;
 
-// MyTOken : 0xB5150F1d51318Ad0C5B8F4dF4dB8DA3Db0886c2c
 
 
 async function main() {
@@ -29,12 +28,12 @@ async function main() {
     myToken = await new MyToken__factory(signer).deploy({ gasLimit: 20_000_000 });
     console.log("Mytoken : ", myToken.target);
 
-    // era = await new ERA__factory(signer).deploy({ gasLimit: 20_000_000 });
-    // console.log("Main ERA : ", era.target);
+    era = await new ERA__factory(signer).deploy({ gasLimit: 20_000_000 });
+    console.log("Main ERA : ", era.target);
 
     // // ERA Homi NFT
-    //  eraHomiNFT = await new ERAHomiNft__factory(signer).deploy(signer.address, { gasLimit: 20_000_000 });
-    // console.log("ERA HOMI NFT : ", eraHomiNFT.target);
+    eraHomiNFT = await new ERAHomiNft__factory(signer).deploy(signer.address, { gasLimit: 20_000_000 });
+    console.log("ERA HOMI NFT : ", eraHomiNFT.target);
 
     // // // universal receciver delegate
     //  delegate = await new UniversalReceiverDelegate__factory(signer).deploy({ gasLimit: 20_000_000 })

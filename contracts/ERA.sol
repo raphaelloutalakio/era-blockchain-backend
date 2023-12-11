@@ -13,7 +13,7 @@ import "./ERATypes.sol";
 import "hardhat/console.sol";
 
 contract ERA is ReentrancyGuard {
-       /// Events
+    /// Events
     event Listed(
         uint64 indexed list_id,
         address lister,
@@ -647,147 +647,166 @@ contract ERA is ReentrancyGuard {
 
     // Collection Launch
     // Function to allow projects to apply for launching NFT collections on the platform
-    // function applyForCollectionLaunch(
-    //     string memory _collectionName,
-    //     address _NFTContract,
-    //     address _royaltyCollector,
-    //     uint _bps
-    // ) external {
-    //     require(_bps <= 10000, "BPS must be <= 10000");
+    function applyForCollectionLaunch(
+        string memory _collectionName,
+        address _NFTContract,
+        address _royaltyCollector,
+        uint _bps
+    ) external {
+        require(_bps <= 10000, "BPS must be <= 10000");
 
-    //     uint applicationId = marketplace.nextApplicationId;
+        uint applicationId = marketplace.nextApplicationId;
 
-    //     NFTCollectionApplication
-    //         memory newApplication = NFTCollectionApplication({
-    //             application_id: applicationId,
-    //             applicant: msg.sender,
-    //             collectionName: _collectionName,
-    //             NFTContract: _NFTContract,
-    //             royaltyCollector: _royaltyCollector,
-    //             bps: _bps,
-    //             approved: false
-    //         });
+        NFTCollectionApplication
+            memory newApplication = NFTCollectionApplication({
+                application_id: applicationId,
+                applicant: msg.sender,
+                collectionName: _collectionName,
+                NFTContract: _NFTContract,
+                royaltyCollector: _royaltyCollector,
+                bps: _bps,
+                approved: false
+            });
 
-    //     collectionApplications[applicationId] = newApplication;
+        collectionApplications[applicationId] = newApplication;
 
-    //     marketplace.nextApplicationId++;
-    //     emit CollectionApplication(
-    //         applicationId,
-    //         msg.sender,
-    //         _collectionName,
-    //         _NFTContract,
-    //         _royaltyCollector,
-    //         _bps,
-    //         false
-    //     );
-    // }
+        marketplace.nextApplicationId++;
+        emit CollectionApplication(
+            applicationId,
+            msg.sender,
+            _collectionName,
+            _NFTContract,
+            _royaltyCollector,
+            _bps,
+            false
+        );
+    }
 
-    // function approveCollectionApplication(
-    //     uint applicationId
-    // ) external onlyOwner {
-    //     require(
-    //         applicationId < marketplace.nextApplicationId,
-    //         "Invalid application ID"
-    //     );
-    //     NFTCollectionApplication storage application = collectionApplications[
-    //         applicationId
-    //     ];
-    //     require(!application.approved, "Application has already been approved");
+    function approveCollectionApplication(
+        uint applicationId
+    ) external onlyOwner {
+        require(
+            applicationId < marketplace.nextApplicationId,
+            "Invalid application ID"
+        );
+        NFTCollectionApplication storage application = collectionApplications[
+            applicationId
+        ];
+        require(!application.approved, "Application has already been approved");
 
-    //     application.approved = true;
+        application.approved = true;
 
-    //     emit CollectionApplicationApproved(
-    //         applicationId,
-    //         application.applicant
-    //     );
-    // }
+        emit CollectionApplicationApproved(
+            applicationId,
+            application.applicant
+        );
+    }
 
     // // Bundles
-    // function createBundle(
-    //     address[] memory _nftAddresses,
-    //     bytes32[] memory _tokenIds,
-    //     address[] memory _paymentTokens,
-    //     uint[] memory _prices
-    // ) external nonReentrant {
-    //     require(
-    //         _nftAddresses.length == _tokenIds.length &&
-    //             _nftAddresses.length == _paymentTokens.length &&
-    //             _nftAddresses.length == _prices.length,
-    //         "Invalid bundle parameters"
-    //     );
-    //     require(
-    //         _nftAddresses.length > 0,
-    //         "Bundle must contain at least one NFT"
-    //     );
+    function createBundle(
+        address[] memory _nftAddresses,
+        bytes32[] memory _tokenIds,
+        address[] memory _paymentTokens,
+        uint[] memory _prices
+    ) external nonReentrant {
+        require(
+            _nftAddresses.length == _tokenIds.length &&
+                _nftAddresses.length == _paymentTokens.length &&
+                _nftAddresses.length == _prices.length,
+            "Invalid bundle parameters"
+        );
+        require(
+            _nftAddresses.length > 0,
+            "Bundle must contain at least one NFT"
+        );
 
-    //     for (uint i = 0; i < _nftAddresses.length; i++) {
-    //         IERC721 asset = IERC721(_nftAddresses[i]);
-    //         asset.transferFrom(msg.sender, address(this), _tokenIds[i]);
-    //         require(
-    //             asset.ownerOf(_tokenIds[i]) == address(this),
-    //             "NFT not transferred"
-    //         );
-    //     }
+        for (uint i = 0; i < _nftAddresses.length; i++) {
+            ILSP8IdentifiableDigitalAsset asset = ILSP8IdentifiableDigitalAsset(
+                _nftAddresses[i]
+            );
 
-    //     Bundle memory newBundle = Bundle({
-    //         bundle_id: marketplace.volume,
-    //         nftAddresses: _nftAddresses,
-    //         tokenIds: _tokenIds,
-    //         paymentTokens: _paymentTokens,
-    //         prices: _prices,
-    //         seller: msg.sender,
-    //         active: true
-    //     });
+            asset.transfer(msg.sender, address(this), _tokenIds[i], true, "");
 
-    //     bundles[marketplace.volume] = newBundle;
+            require(
+                asset.isOperatorFor(address(this), _tokenIds[i]),
+                "NFT not transferred"
+            );
+        }
 
-    //     emit BundleCreated(
-    //         marketplace.volume,
-    //         _nftAddresses,
-    //         _tokenIds,
-    //         _paymentTokens,
-    //         _prices,
-    //         msg.sender
-    //     );
+        Bundle memory newBundle = Bundle({
+            bundle_id: marketplace.volume,
+            nftAddresses: _nftAddresses,
+            tokenIds: _tokenIds,
+            paymentTokens: _paymentTokens,
+            prices: _prices,
+            seller: msg.sender,
+            active: true
+        });
 
-    //     marketplace.volume = marketplace.volume + 1;
-    // }
+        bundles[marketplace.volume] = newBundle;
 
-    // function buyBundle(uint bundle_id) external nonReentrant {
-    //     Bundle storage bundle = bundles[bundle_id];
-    //     require(bundle.active, "Bundle is not active");
+        emit BundleCreated(
+            marketplace.volume,
+            _nftAddresses,
+            _tokenIds,
+            _paymentTokens,
+            _prices,
+            msg.sender
+        );
 
-    //     uint totalBundlePrice = 0;
-    //     for (uint i = 0; i < bundle.nftAddresses.length; i++) {
-    //         require(
-    //             bundle.nftAddresses[i] != address(0),
-    //             "Invalid NFT address"
-    //         );
-    //         require(bundle.tokenIds[i] != 0, "Invalid token ID");
-    //         require(
-    //             bundle.paymentTokens[i] != address(0),
-    //             "Invalid paymentToken address"
-    //         );
-    //         totalBundlePrice += bundle.prices[i];
-    //     }
+        marketplace.volume = marketplace.volume + 1;
+    }
 
-    //     require(totalBundlePrice > 0, "Invalid bundle price");
+    function buyBundle(uint bundle_id) external nonReentrant {
+        Bundle storage bundle = bundles[bundle_id];
+        require(bundle.active, "Bundle is not active");
 
-    //     for (uint i = 0; i < bundle.nftAddresses.length; i++) {
-    //         IERC721 asset = IERC721(bundle.nftAddresses[i]);
-    //         asset.transferFrom(address(this), msg.sender, bundle.tokenIds[i]);
-    //     }
+        uint totalBundlePrice = 0;
+        for (uint i = 0; i < bundle.nftAddresses.length; i++) {
+            require(
+                bundle.nftAddresses[i] != address(0),
+                "Invalid NFT address"
+            );
+            require(bundle.tokenIds[i] != 0, "Invalid token ID");
+            require(
+                bundle.paymentTokens[i] != address(0),
+                "Invalid paymentToken address"
+            );
+            totalBundlePrice += bundle.prices[i];
+        }
 
-    //     for (uint i = 0; i < bundle.nftAddresses.length; i++) {
-    //         IERC20(bundle.paymentTokens[i]).transferFrom(
-    //             msg.sender,
-    //             bundle.seller,
-    //             bundle.prices[i]
-    //         );
-    //     }
+        require(totalBundlePrice > 0, "Invalid bundle price");
 
-    //     bundle.active = false;
+        for (uint i = 0; i < bundle.nftAddresses.length; i++) {
+            ILSP8IdentifiableDigitalAsset asset = ILSP8IdentifiableDigitalAsset(
+                bundle.nftAddresses[i]
+            );
 
-    //     emit BundlePurchased(bundle_id, msg.sender, bundle.seller);
-    // }
+            asset.transfer(
+                address(this),
+                msg.sender,
+                bundle.tokenIds[i],
+                true,
+                ""
+            );
+        }
+
+        for (uint i = 0; i < bundle.nftAddresses.length; i++) {
+            ILSP7DigitalAsset token = ILSP7DigitalAsset(
+                bundle.paymentTokens[i]
+            );
+
+            token.transfer(
+                msg.sender,
+                bundle.seller,
+                bundle.prices[i],
+                true,
+                ""
+            );
+        }
+
+        bundle.active = false;
+
+        emit BundlePurchased(bundle_id, msg.sender, bundle.seller);
+    }
 }

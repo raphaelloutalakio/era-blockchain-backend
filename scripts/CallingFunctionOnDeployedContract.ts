@@ -47,19 +47,20 @@ async function main() {
     const eraDeployedAddress = contracts?.contracts?.ERA;
 
     let myToken = new ethers.Contract(deployedContractAddress, MyToken__factory.abi, provider);
-    // let eraHomiNFT = new ethers.Contract(eraHomiDeployedAddrss, ERAHomiNft__factory.abi, provider);
+    let eraHomiNFT = new ethers.Contract(eraHomiDeployedAddrss, ERAHomiNft__factory.abi, provider);
     // let era = new ethers.Contract(eraDeployedAddress, ERA__factory.abi, provider);
 
 
-    const recipientAddress = "0x94f0ee9f0e2a0A52A99d155740EC51432774d189"
+    const recipientAddress = "0x9f3B329f2130550B761277922BaE16C548eA771E"
 
     // mint
-    const tx = await myToken.connect(signer).mint(recipientAddress, { gasLimit: 400_000 });
-    await tx.wait();
+    // const tx = await myToken.connect(signer).mint(recipientAddress, { gasLimit: 400_000 });
+    // await tx.wait();
 
     // min nft 
-    // const minNftTx = await eraHomiNFT.connect(signer).mintNewEraHomi(recipientAddress, 1, true, { gasLimit: 400_000 });
-    // await minNftTx.wait()
+    console.log("address  : ", eraHomiNFT.target);
+    const minNftTx = await eraHomiNFT.connect(signer).mintNewEraHomi(recipientAddress, 3, true, { gasLimit: 400_000 });
+    await minNftTx.wait()
 
 
     // check operiator
