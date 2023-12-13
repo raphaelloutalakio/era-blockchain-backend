@@ -15,46 +15,46 @@ import "hardhat/console.sol";
 contract ERA is ReentrancyGuard {
     /// Events
     event Listed(
-        uint64 indexed list_id,
+        uint indexed list_id,
         address lister,
         address indexed nftAddress,
         bytes32 indexed tokenId,
         address paymentToken,
-        uint128 ask,
+        uint ask,
         address owner
     );
 
     event ItemDelisted(
-        uint64 list_id,
+        uint list_id,
         address indexed nftAddress,
         bytes32 indexed tokenId,
         address indexed paymentToken,
-        uint128 ask,
+        uint ask,
         address owner,
         address lister
     );
 
     event Offered(
-        uint64 indexed listId,
-        uint64 indexed offerId,
+        uint indexed listId,
+        uint indexed offerId,
         address offerer,
         address paymentToken,
-        uint64 offerPrice
+        uint offerPrice
     );
 
-    event OfferRemoved(uint64 indexed listId, uint64 indexed offerId);
+    event OfferRemoved(uint indexed listId, uint indexed offerId);
 
     event ItemPurchased(
         address indexed buyer,
         address indexed lister,
-        uint64 indexed listId,
+        uint indexed listId,
         address nftAddress,
         bytes32 tokenId,
         address paymentToken,
         uint totalPrice
     );
 
-    event ChangePrice(uint64 indexed item_id, address paymentToken, uint64 ask);
+    event ChangePrice(uint indexed item_id, address paymentToken, uint ask);
 
     event AuctionCreated(
         uint auctionId,
@@ -116,7 +116,7 @@ contract ERA is ReentrancyGuard {
 
     // Mappings
     mapping(address => RoyaltyCollection) public royaltyCollections;
-    mapping(uint64 => List) public lists;
+    mapping(uint => List) public lists;
     mapping(uint => Offer[]) public listIdToOffers;
     mapping(uint => AuctionItem) public auctions;
     mapping(uint => NFTCollectionApplication) public collectionApplications;
@@ -201,7 +201,7 @@ contract ERA is ReentrancyGuard {
         address _nftAddress,
         bytes32 _tokenId,
         address _paymentToken,
-        uint128 _ask
+        uint _ask
     ) external nonReentrant {
         require(_ask > 0, "Asked price should be greater than 0");
 
@@ -243,7 +243,7 @@ contract ERA is ReentrancyGuard {
         );
     }
 
-    function delist(address _lister, uint64 _listId) external {
+    function delist(address _lister, uint _listId) external {
         List storage listedItem = lists[_listId];
 
         if (msg.sender == omnichainEraAddr) {
@@ -274,9 +274,9 @@ contract ERA is ReentrancyGuard {
     }
 
     function changePrice(
-        uint64 _listId,
+        uint _listId,
         address _paymentToken,
-        uint64 _ask
+        uint _ask
     ) external {
         List storage listedItem = lists[_listId];
         require(msg.sender == listedItem.lister, "Not lister");
@@ -289,7 +289,7 @@ contract ERA is ReentrancyGuard {
         emit ChangePrice(_listId, _paymentToken, _ask);
     }
 
-    function buy(uint64 _listId) external nonReentrant {
+    function buy(uint _listId) external nonReentrant {
         require(_listId < marketplace.listed, "Invalid list ID");
 
         uint fee_amount;
@@ -373,9 +373,9 @@ contract ERA is ReentrancyGuard {
     }
 
     function makeOffer(
-        uint64 _listId,
+        uint _listId,
         address _paymentToken,
-        uint64 _offerPrice
+        uint _offerPrice
     ) external {
         require(_offerPrice > 0, "Offer price must be greater than 0");
         require(_listId < marketplace.listed, "Invalid list ID");
@@ -383,7 +383,7 @@ contract ERA is ReentrancyGuard {
         List storage listedItem = lists[_listId];
         require(listedItem.nftAddress != address(0), "Invalid nftAddress");
 
-        uint64 offerId = uint64(listIdToOffers[_listId].length);
+        uint offerId = uint(listIdToOffers[_listId].length);
 
         Offer memory newOffer = Offer({
             offer_id: offerId,
@@ -399,10 +399,7 @@ contract ERA is ReentrancyGuard {
         emit Offered(_listId, offerId, msg.sender, _paymentToken, _offerPrice);
     }
 
-    function acceptOffer(
-        uint64 _listId,
-        uint64 _offerId
-    ) external nonReentrant {
+    function acceptOffer(uint _listId, uint _offerId) external nonReentrant {
         List storage listedItem = lists[_listId];
 
         require(listedItem.lister == msg.sender, "Not lister");
@@ -486,7 +483,7 @@ contract ERA is ReentrancyGuard {
         );
     }
 
-    function removeOffer(uint64 _listId, uint64 _offerId) public {
+    function removeOffer(uint _listId, uint _offerId) public {
         require(_listId < marketplace.listed, "List does not exist");
         require(
             _offerId < listIdToOffers[_listId].length,
@@ -505,11 +502,11 @@ contract ERA is ReentrancyGuard {
     function listAuction(
         address _nftAddress,
         bytes32 _tokenId,
-        address payable _paymentToken,
-        uint32 _minBid,
-        uint32 _minBidIncrement,
-        uint32 _startTime,
-        uint32 _expirationTime
+        address _paymentToken,
+        uint _minBid,
+        uint _minBidIncrement,
+        uint _startTime,
+        uint _expirationTime
     ) external nonReentrant {
         if (_startTime < block.timestamp || _expirationTime < _startTime)
             revert("InvalidStartDate");
@@ -561,10 +558,7 @@ contract ERA is ReentrancyGuard {
         );
     }
 
-    function placeBid(
-        uint64 _auctionId,
-        uint128 _bidAmount
-    ) external nonReentrant {
+    function placeBid(uint _auctionId, uint _bidAmount) external nonReentrant {
         require(_auctionId < marketplace.auctioned, "Auction does not exist");
 
         AuctionItem storage auctionItem = auctions[_auctionId];
